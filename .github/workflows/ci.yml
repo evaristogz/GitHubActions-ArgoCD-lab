@@ -31,12 +31,12 @@ jobs:
                   pip install black ruff
 
             # Check code style and linting
-            - name: Code style (Black)
+            - name: ⬇️ Code style (Black)
               run: black --check app tests
               continue-on-error: true   # Info mode
 
             # Linter (Ruff)
-            - name: Lint (Ruff)
+            - name: ⬇️ Lint (Ruff)
               run: ruff check app tests
               continue-on-error: true   # Info mode
 

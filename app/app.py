@@ -12,7 +12,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Formateador JSON
-formatter = jsonlogger.JsonFormatter('%(asctime)s %(levelname)s %(message)s')
+formatter = jsonlogger.JsonFormatter("%(asctime)s %(levelname)s %(message)s")
 
 # Handler para consola (stdout)
 stream_handler = logging.StreamHandler()
@@ -22,11 +22,14 @@ logger.addHandler(stream_handler)
 # Guardar en archivo log
 try:
     os.makedirs("/var/log/kc-visit-counter", exist_ok=True)
-    file_handler = logging.FileHandler('/var/log/kc-visit-counter/app.log')
+    file_handler = logging.FileHandler("/var/log/kc-visit-counter/app.log")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 except Exception as e:
-    logger.warning("No se pudo inicializar logging en archivo: /var/log/kc-visit-counter/app.log", exc_info=e)
+    logger.warning(
+        "No se pudo inicializar logging en archivo: /var/log/kc-visit-counter/app.log",
+        exc_info=e,
+    )
 
 
 # === Flask App ===
@@ -39,7 +42,7 @@ DB_CONFIG = {
     "user": os.environ.get("DB_USER", "usuario"),
     "password": os.environ.get("DB_PASSWORD", "contrasenya"),
     "host": os.environ.get("DB_HOST", "db"),
-    "port": os.environ.get("DB_PORT", "5432")
+    "port": os.environ.get("DB_PORT", "5432"),
 }
 logger.info("Configuración de conexión", extra=DB_CONFIG)
 
@@ -58,6 +61,7 @@ else:
     raise Exception("❌ PostgreSQL no responde.")
 
 cursor = conn.cursor()
+
 
 @app.route("/")
 def registrar_y_mostrar():
@@ -97,7 +101,9 @@ def registrar_y_mostrar():
                     <tbody>
         """
         for v in visitas:
-            html += f"<tr><td>{v[0]}</td><td>{v[1].strftime('%d/%m/%Y %H:%M:%S')}</td></tr>"
+            html += (
+                f"<tr><td>{v[0]}</td><td>{v[1].strftime('%d/%m/%Y %H:%M:%S')}</td></tr>"
+            )
 
         html += """
                     </tbody>
@@ -115,4 +121,3 @@ def registrar_y_mostrar():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-

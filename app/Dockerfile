@@ -23,6 +23,6 @@ COPY --from=builder /install-deps /usr/local
 
 # Copiar tu aplicación y estáticos
 COPY app.py .
-COPY /static/ static/
+COPY static/ static/
 
 CMD ["python", "app.py"]

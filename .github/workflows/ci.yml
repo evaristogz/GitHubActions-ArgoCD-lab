@@ -27,7 +27,7 @@ jobs:
             # Install linters
             - name: Install linters
               run: |
-              pip install black ruff
+                  pip install black ruff
 
             # Check code style and linting
             - name: Code style (Black)

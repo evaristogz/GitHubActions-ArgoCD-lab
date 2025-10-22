@@ -4,8 +4,9 @@ import os
 import time
 import psycopg
 
+
 def test_db_select_one():
-    dsn = os.environ["DATABASE_URL"]  # ej: postgresql://appuser:apppass@localhost:5432/appdb
+    dsn = os.environ["DATABASE_URL"]
     for _ in range(30):
         try:
             with psycopg.connect(dsn) as conn:

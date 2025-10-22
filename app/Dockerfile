@@ -1,5 +1,5 @@
 # Stage 1: Instalar dependencias en entorno aislado
-FROM python:3.13-alpine AS builder
+FROM python:3.12-alpine AS builder
 
 WORKDIR /install
 
@@ -11,7 +11,7 @@ RUN pip install --upgrade pip && \
     pip install --prefix=/install-deps -r requirements.txt
 
 # Stage 2: Imagen limpia
-FROM python:3.13-alpine
+FROM python:3.12-alpine
 
 WORKDIR /app
 

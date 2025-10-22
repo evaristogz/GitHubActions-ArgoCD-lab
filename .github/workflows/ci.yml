@@ -36,7 +36,7 @@ jobs:
 
             # Linter (Ruff)
             - name: Lint (Ruff)
-              run: ruff app tests
+              run: ruff check app tests
               continue-on-error: true   # Info mode
 
             # Run tests

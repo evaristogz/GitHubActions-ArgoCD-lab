@@ -1,4 +1,4 @@
-name: CI - Minimal tests
+name: kc-visit-counter CI/CD
 
 on:
     push:

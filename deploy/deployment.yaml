@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: kc-visit-counter
-          image: ghcr.io/EvaristoGZ/githubactions-argocd-lab/kc-visit-counter:latest
+          image: ghcr.io/evaristogz/githubactions-argocd-lab/kc-visit-counter:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5000

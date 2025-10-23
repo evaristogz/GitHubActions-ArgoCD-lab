@@ -19,14 +19,45 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
           env:
-            - name: APP_ENV
-              value: "prod"
+            # Todas las variables desde UN SOLO Secret
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: db-conn
+                  key: DB_HOST
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-conn
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-conn
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-conn
+                  key: DB_PASSWORD
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: db-conn
+                  key: DB_PORT
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: db-conn
-                  key: url
+                  key: DATABASE_URL
             - name: PORT
               value: "5000"
           readinessProbe:
@@ -34,4 +65,4 @@ spec:
               path: /
               port: 5000
             initialDelaySeconds: 15
-            periodSeconds: 10
+            periodSeconds: 600   # Ten minutes because the Python app is a visit counter

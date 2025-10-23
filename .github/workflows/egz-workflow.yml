@@ -63,8 +63,9 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
             
-            # Quality Gate Check with API
+            # Quality Gate Check (only on main branch due to plan limitations)
             - name: Check Quality Gate Status
+              if: github.ref == 'refs/heads/main'
               run: |
                 echo "Waiting for SonarCloud to process results..."
                 
@@ -72,13 +73,9 @@ jobs:
                 for i in {1..6}; do
                   echo "Attempt $i/6: Checking Quality Gate status..."
                   
-                  # Get branch name
-                  BRANCH_NAME=${GITHUB_REF#refs/heads/}
-                  echo "Checking branch: $BRANCH_NAME"
-                  
-                  # API call with branch parameter
+                  # API call for main branch (no branch parameter needed for main)
                   RESPONSE=$(curl -s -u $SONAR_TOKEN: \
-                    "https://sonarcloud.io/api/qualitygates/project_status?projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME" \
+                    "https://sonarcloud.io/api/qualitygates/project_status?projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab" \
                     || echo '{"projectStatus":{"status":"ERROR"}}')
                   
                   echo "API Response: $RESPONSE"
@@ -102,10 +99,19 @@ jobs:
                 done
                 
                 echo "⚠️ Quality Gate check timed out - treating as informational"
-                echo "Check manually at: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME"
+                echo "Check manually at: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab"
               env:
                 SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-              #continue-on-error: true
+              
+            # Quality Gate notification for non-main branches
+            - name: Quality Gate Info (Non-main branches)
+              if: github.ref != 'refs/heads/main'
+              run: |
+                BRANCH_NAME=${GITHUB_REF#refs/heads/}
+                echo "ℹ️ Quality Gate check skipped for branch: $BRANCH_NAME"
+                echo "Quality Gates are available only for main branch in your SonarCloud plan"
+                echo "📊 View analysis results at: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME"
+                echo "✅ SonarCloud analysis completed successfully"
 
         services:
             postgres:

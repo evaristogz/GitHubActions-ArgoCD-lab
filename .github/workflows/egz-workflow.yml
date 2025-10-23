@@ -74,7 +74,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             
-            # Snyk security scan for dependencies
+            # Snyk security scan for dependencies (you can use --skip-unresolved)
             - name: Snyk - Dependencies scan
               uses: snyk/actions/python@master
               env:

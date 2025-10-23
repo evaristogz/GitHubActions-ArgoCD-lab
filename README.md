@@ -541,3 +541,20 @@ argocd app sync kc-visit-counter
 # Eliminar clúster y limpiar recursos
 kind delete cluster --name local-k8s-cluster
 ```
+
+---
+
+## 📋 Entregables
+
+| # | Entregable | Enlace/Ubicación |
+|---|------------|------------------|
+| 1 | **Repositorio GitHub** | [https://github.com/EvaristoGZ/GitHubActions-ArgoCD-lab](https://github.com/EvaristoGZ/GitHubActions-ArgoCD-lab) |
+| 2 | **Repositorio de artefactos** | [Ver repositorio](https://github.com/EvaristoGZ?tab=packages&repo_name=GitHubActions-ArgoCD-lab) |
+| 3 | **Pipeline CI/CD** | [Ver fichero *egz-workflow.yml*](.github/workflows/egz-workflow.yml) |
+| 4 | **Screenshots del pipeline** | [Ver imagen *04-pipeline.jpg*](#) |
+| 5 | **Manifiestos de Kubernetes** | [Ver directorio *deploy/*](deploy/) |
+| 6 | **Aplicación desplegada** | [Ver imagen *06-kc-visit-counter.jpg*](#) |
+| 7 | **Proyecto en ArgoCD** | [Ver imagen *07-argocd.jpg*](#) |
+| 8 | **Proyecto en SonarCloud** | [Ver imagen *08-sonarcloud.jpg*](#) |
+| 9 | **Proyecto en Snyk** | [Ver imagen *04-pipeline.jpg*](#) |
+| 10 | **Vídeo explicativo** | *[Pendiente de subir a YouTube]* |

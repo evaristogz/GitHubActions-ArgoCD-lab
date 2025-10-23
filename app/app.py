@@ -41,7 +41,7 @@ DB_CONFIG = {
     "dbname": os.environ.get("DB_NAME", "basedatos"),
     "user": os.environ.get("DB_USER", "usuario"),
     "password": os.environ.get("DB_PASSWORD", "contrasenya"),
-    "host": os.environ.get("DB_HOST", "db"),
+    "host": os.environ.get("DB_HOST", "postgres.kc.svc.cluster.local"),
     "port": os.environ.get("DB_PORT", "5432"),
 }
 logger.info("Configuración de conexión", extra=DB_CONFIG)

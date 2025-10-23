@@ -7,8 +7,8 @@ name: local-k8s-cluster
 nodes:
   - role: control-plane
     extraPortMappings:
-      # Expose Flask app port (5000) to host port 8080
-      - containerPort: 5000
+      # Expose Flask app via NodePort to host port 8080
+      - containerPort: 30000
         hostPort: 8080
         protocol: TCP
     kubeadmConfigPatches:

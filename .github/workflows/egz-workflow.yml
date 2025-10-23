@@ -161,7 +161,7 @@ jobs:
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
               with:
-                  image: ghcr.io/${{ github.repository }}/kc-visit-counter:latest
+                  image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
                   args: --severity-threshold=high --sarif-file-output=snyk-container.sarif
               continue-on-error: true
               

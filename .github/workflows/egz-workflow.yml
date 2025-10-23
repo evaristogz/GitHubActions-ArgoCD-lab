@@ -75,13 +75,20 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             
+            # Debug: Show what Snyk will analyze
+            - name: Debug - Show requirements.txt
+              run: |
+                echo "Contents of app/requirements.txt:"
+                cat app/requirements.txt
+                echo "---"
+            
             # Snyk security scan for dependencies (you can use --skip-unresolved)
             - name: Snyk - Dependencies scan
               uses: snyk/actions/python@master
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
               with:
-                  args: --file=app/requirements.txt --severity-threshold=high --sarif-file-output=snyk-deps.sarif --skip-unresolved
+                  args: --file=app/requirements.txt --severity-threshold=medium --sarif-file-output=snyk-deps.sarif --skip-unresolved --update-org
               continue-on-error: false   # Fail pipeline if high/critical vulnerabilities found
               
             # Snyk Infrastructure as Code scan

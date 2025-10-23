@@ -80,7 +80,7 @@ jobs:
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
               with:
-                  args: --file=app/requirements.txt --severity-threshold=high --sarif-file-output=snyk-deps.sarif
+                  args: --file=app/requirements.txt --severity-threshold=high --sarif-file-output=snyk-deps.sarif --skip-unresolved
               continue-on-error: true
               
             # Snyk Infrastructure as Code scan

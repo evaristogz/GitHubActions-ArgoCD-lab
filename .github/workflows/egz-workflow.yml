@@ -25,7 +25,7 @@ jobs:
               run: |
                   python -m pip install --upgrade pip
                   pip install -r app/requirements.txt
-                  pip install pytest pytest-cov pytest-xvfb coverage
+                  pip install pytest pytest-cov pytest-xvfb coverage tox
 
             # Install linters
             - name: Install linters
@@ -67,8 +67,11 @@ jobs:
                   PYTHONPATH: ${{ github.workspace }}
                   DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
               run: |
-                # Ejecutar tests con coverage desde el directorio raíz
+                # Opción 1: Usar pytest directamente (actual)
                 pytest tests/ --cov=app --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml -v
+                
+                # Opción 2: Usar tox (alternativa)
+                # tox -e py312
                 
                 # Verificar que se generó el archivo de cobertura
                 echo "Coverage report files generated:"

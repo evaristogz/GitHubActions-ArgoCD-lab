@@ -23,7 +23,6 @@ jobs:
               run: |
                   python -m pip install --upgrade pip
                   pip install -r app/requirements.txt pytest pytest-cov
-                  pip install "psycopg[binary]>=3.1"
 
             # Install linters
             - name: Install linters
@@ -46,7 +45,7 @@ jobs:
                   PYTHONPATH: .
                   DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
               run: |
-                 pytest --cov=app --cov-report=xml --cov-report=term -q
+                pytest --cov=app --cov-report=xml --cov-report=term -q
 
             # Upload coverage report
             - name: Upload coverage report
@@ -54,6 +53,7 @@ jobs:
               with:
                   name: pytest-coverage-xml
                   path: coverage.xml
+
         services:
             postgres:
                 image: postgres:16
@@ -66,6 +66,47 @@ jobs:
                 options: >-
                     --health-cmd="pg_isready -U testuser -d testdb"
                     --health-interval=5s --health-timeout=3s --health-retries=20
+    security:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            security-events: write
+        steps:
+            - uses: actions/checkout@v4
+            
+            # Snyk security scan for dependencies (you can use --skip-unresolved)
+            - name: Snyk - Dependencies scan
+              uses: snyk/actions/python@master
+              env:
+                  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+              with:
+                  args: --file=app/requirements.txt --severity-threshold=high --sarif-file-output=snyk-deps.sarif --skip-unresolved
+              continue-on-error: true
+              
+            # Snyk Infrastructure as Code scan
+            - name: Snyk - IaC scan (Kubernetes)
+              uses: snyk/actions/iac@master
+              env:
+                  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+              with:
+                  args: --severity-threshold=high deploy/ --sarif-file-output=snyk-iac.sarif
+              continue-on-error: true
+              
+            # Upload Snyk dependencies results to GitHub Security tab
+            - name: Upload Snyk dependencies results
+              uses: github/codeql-action/upload-sarif@v3
+              if: always() && hashFiles('snyk-deps.sarif') != ''
+              with:
+                  sarif_file: snyk-deps.sarif
+                  category: snyk-deps
+                  
+            # Upload Snyk IaC results to GitHub Security tab  
+            - name: Upload Snyk IaC results
+              uses: github/codeql-action/upload-sarif@v3
+              if: always() && hashFiles('snyk-iac.sarif') != ''
+              with:
+                  sarif_file: snyk-iac.sarif
+                  category: snyk-iac
 
     docker:
         if: github.ref == 'refs/heads/main'   # Only on main branch
@@ -74,6 +115,7 @@ jobs:
         permissions:
             contents: read
             packages: write
+            security-events: write
         steps:
             - uses: actions/checkout@v4
 
@@ -100,6 +142,7 @@ jobs:
                       type=raw,value=latest
                       type=sha
 
+            # Docker build and push
             - name: Build and Push
               uses: docker/build-push-action@v6
               with:
@@ -111,3 +154,21 @@ jobs:
                   # Cache build for speed
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
+
+            # Snyk container security scan
+            - name: Snyk - Container scan
+              uses: snyk/actions/docker@master
+              env:
+                  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+              with:
+                  image: ghcr.io/${{ github.repository }}/kc-visit-counter:latest
+                  args: --severity-threshold=high --sarif-file-output=snyk-container.sarif
+              continue-on-error: true
+              
+            # Upload Snyk container results to GitHub Security tab
+            - name: Upload Snyk container results
+              uses: github/codeql-action/upload-sarif@v3
+              if: always() && hashFiles('snyk-container.sarif') != ''
+              with:
+                  sarif_file: snyk-container.sarif
+                  category: snyk-container

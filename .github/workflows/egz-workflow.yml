@@ -12,6 +12,8 @@ jobs:
         steps:
             # Download the repository
             - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
             
             # Configure Python
             - uses: actions/setup-python@v5
@@ -31,12 +33,31 @@ jobs:
 
             # Check code style and linting
             - name: ⬇️ Code style (Black)
-              run: black --check app tests
+              id: black-check
+              run: |
+                if ! black --check app tests; then
+                  echo "::warning title=Black Code Style::Code formatting issues found. Run 'black app tests' to fix them."
+                  echo "::warning file=tests/test_db_ping.py::This file needs reformatting with Black"
+                  echo "Files that need reformatting:"
+                  black --check app tests --diff
+                  exit 0  # Don't fail the step, just show warnings
+                else
+                  echo "✅ Code style is compliant with Black"
+                fi
               continue-on-error: true   # Info mode
 
             # Linter (Ruff)
             - name: ⬇️ Lint (Ruff)
-              run: ruff check app tests
+              id: ruff-check
+              run: |
+                if ! ruff check app tests; then
+                  echo "::warning title=Ruff Linter::Linting issues found. Run 'ruff check app tests --fix' to fix them."
+                  echo "Linting issues details:"
+                  ruff check app tests --output-format=github
+                  exit 0  # Don't fail the step, just show warnings
+                else
+                  echo "✅ Code passes all linting checks"
+                fi
               continue-on-error: true   # Info mode
 
             # Run tests
@@ -45,7 +66,7 @@ jobs:
                   PYTHONPATH: .
                   DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
               run: |
-                pytest --cov=app --cov-report=xml --cov-report=term -q
+                pytest --cov=app --cov-report=xml --cov-report=term --junitxml=test-results.xml -q
 
             # Upload coverage report
             - name: Upload coverage report
@@ -53,6 +74,57 @@ jobs:
               with:
                   name: pytest-coverage-xml
                   path: coverage.xml
+
+            # SonarCloud analysis
+            - name: SonarCloud Scan
+              uses: SonarSource/sonarqube-scan-action@v6
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            
+            # Quality Gate Check with API
+            - name: Check Quality Gate Status
+              run: |
+                echo "Waiting for SonarCloud to process results..."
+                
+                # Wait for processing with retry logic
+                for i in {1..6}; do
+                  echo "Attempt $i/6: Checking Quality Gate status..."
+                  
+                  # Get branch name
+                  BRANCH_NAME=${GITHUB_REF#refs/heads/}
+                  echo "Checking branch: $BRANCH_NAME"
+                  
+                  # API call with branch parameter
+                  RESPONSE=$(curl -s -u $SONAR_TOKEN: \
+                    "https://sonarcloud.io/api/qualitygates/project_status?projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME" \
+                    || echo '{"projectStatus":{"status":"ERROR"}}')
+                  
+                  echo "API Response: $RESPONSE"
+                  
+                  QUALITY_GATE_STATUS=$(echo $RESPONSE | jq -r '.projectStatus.status // "NONE"')
+                  echo "Quality Gate Status: $QUALITY_GATE_STATUS"
+                  
+                  if [ "$QUALITY_GATE_STATUS" = "OK" ]; then
+                    echo "✅ Quality Gate passed!"
+                    exit 0
+                  elif [ "$QUALITY_GATE_STATUS" = "ERROR" ]; then
+                    echo "❌ Quality Gate failed!"
+                    exit 1
+                  elif [ "$QUALITY_GATE_STATUS" != "NONE" ]; then
+                    echo "❌ Quality Gate status: $QUALITY_GATE_STATUS"
+                    exit 1
+                  fi
+                  
+                  echo "Still processing... waiting 30 seconds"
+                  sleep 30
+                done
+                
+                echo "⚠️ Quality Gate check timed out - treating as informational"
+                echo "Check manually at: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME"
+              env:
+                SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+              continue-on-error: true
 
         services:
             postgres:
@@ -67,6 +139,7 @@ jobs:
                     --health-cmd="pg_isready -U testuser -d testdb"
                     --health-interval=5s --health-timeout=3s --health-retries=20
     security:
+        needs: tests   # Wait for tests to pass
         runs-on: ubuntu-latest
         permissions:
             contents: read
@@ -74,14 +147,21 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             
+            # Debug: Show what Snyk will analyze
+            - name: Debug - Show requirements.txt
+              run: |
+                echo "Contents of app/requirements.txt:"
+                cat app/requirements.txt
+                echo "---"
+            
             # Snyk security scan for dependencies (you can use --skip-unresolved)
             - name: Snyk - Dependencies scan
               uses: snyk/actions/python@master
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
               with:
-                  args: --file=app/requirements.txt --severity-threshold=high --sarif-file-output=snyk-deps.sarif --skip-unresolved
-              continue-on-error: true
+                  args: --file=app/requirements.txt --severity-threshold=medium --sarif-file-output=snyk-deps.sarif --skip-unresolved --update-org
+              continue-on-error: false   # Fail pipeline if high/critical vulnerabilities found
               
             # Snyk Infrastructure as Code scan
             - name: Snyk - IaC scan (Kubernetes)
@@ -90,7 +170,7 @@ jobs:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
               with:
                   args: --severity-threshold=high deploy/ --sarif-file-output=snyk-iac.sarif
-              continue-on-error: true
+              continue-on-error: false   # Fail pipeline if IaC security issues found
               
             # Upload Snyk dependencies results to GitHub Security tab
             - name: Upload Snyk dependencies results
@@ -110,7 +190,7 @@ jobs:
 
     docker:
         if: github.ref == 'refs/heads/main'   # Only on main branch
-        needs: tests                          # Wait for tests to pass
+        needs: [tests, security]              # Wait for tests and security to pass
         runs-on: ubuntu-latest
         permissions:
             contents: read

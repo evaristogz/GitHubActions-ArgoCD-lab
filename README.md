@@ -19,7 +19,7 @@ El resultado final contempla un laboratorio con una arquitectura ficticia y simp
 ## 📋 Índice de contenidos
 
 - [🎯 Descripción del proyecto](#-descripción-del-proyecto)
-- [🛠️ Stack tecnológico](#️-stack-tecnologico)
+- [🛠️ Stack tecnológico](#️-stack-tecnológico)
 - [🏗️ Diagrama de arquitectura](#️-diagrama-de-arquitectura)
 - [🔄 Pipeline CI/CD](#-pipeline-cicd)
 - [📦 Estructura del repositorio](#-estructura-del-repositorio)
@@ -183,12 +183,12 @@ GitHubActions-ArgoCD-lab/
 │   ├── 📄 postgres.yaml             <- StatefulSet PostgreSQL
 │   ├── 📄 postgres-init.yaml        <- Schema de la base de datos
 │   ├── 📄 secrets-db-example.yaml   <- Ejemplo de secrets
-│   ├── 📄 app-argocd.yaml           <- Aplicación ArgoCD
-│   └── 📄 kind-cluster.yaml         <- Configuración Kind clúster
+│   └── 📄 app-argocd.yaml           <- Aplicación ArgoCD
 ├── 📁 tests/                        <- Tests de CI/CD
 │   ├── 📄 test_import_app.py        <- Test importación
 │   ├── 📄 test_smoke.py             <- Tests de integración
 │   └── 📄 test_db_ping.py           <- Test conexión DB
+├── 📄 kind-cluster.yaml             <- Configuración Kind clúster
 └── 📄 sonar-project.properties      <- Configuración SonarCloud
 ```
 
@@ -223,12 +223,12 @@ kind create cluster --config kind-cluster.yaml
 ### 3. Conectar aplicaciones
 
 #### 3.1 Conectar Snyk
-Visita Snyk.io, conéctate con tu cuenta de GitHub y extrae un [token personal](https://app.snyk.io/account).
+Visita [Snyk.io](https://snyk.io/), conéctate con tu cuenta de GitHub y extrae un [token personal](https://app.snyk.io/account).
 
 Añade este token como secreto en la configuración de tu repositorio (Settings>Secrets and Variables>Actions>Repository secrets) con el nombre *SNYK_TOKEN*.
 
 #### 3.2 Conectar SonarCloud
-Visita sonarcloud.io, conéctate con tu cuenta de GitHub, crea un proyecto y extrae un [token personal](https://sonarcloud.io/account/security).
+Visita [Sonarcloud.io](https://sonarcloud.io/), conéctate con tu cuenta de GitHub, crea un proyecto y extrae un [token personal](https://sonarcloud.io/account/security).
 
 Añade este token como secreto en la configuración de tu repositorio (Settings>Secrets and Variables>Actions>Repository secrets) con el nombre *SONAR_TOKEN*.
 
@@ -256,6 +256,9 @@ Acceder a https://localhost:9090 desde un navegador web y aceptar la conexión a
 Acceder a http://localhost:8080 desde un navegador web.
 
 Nota: las visitas se incrementarán automáticamente cada 90 segundos debido a que la comprobación del deployment se hace a esa dirección URL.
+
+> [!NOTE]
+> Si quieres recrear este laboratorio, deberás hacer un fork del repositorio y hacer cambios en las referencias de los ficheros contenidos en la carpeta deploy.
 
 ## ⚙️ Configuración
 

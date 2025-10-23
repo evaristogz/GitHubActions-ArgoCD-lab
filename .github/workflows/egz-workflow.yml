@@ -45,7 +45,7 @@ jobs:
                   PYTHONPATH: .
                   DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
               run: |
-                 pytest --cov=app --cov-report=xml --cov-report=term -q
+                pytest --cov=app --cov-report=xml --cov-report=term -q
 
             # Upload coverage report
             - name: Upload coverage report
@@ -53,6 +53,19 @@ jobs:
               with:
                   name: pytest-coverage-xml
                   path: coverage.xml
+
+        services:
+            postgres:
+                image: postgres:16
+                env:
+                    POSTGRES_DB: testdb
+                    POSTGRES_USER: testuser
+                    POSTGRES_PASSWORD: testpass
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd="pg_isready -U testuser -d testdb"
+                    --health-interval=5s --health-timeout=3s --health-retries=20
     security:
         runs-on: ubuntu-latest
         permissions:
@@ -94,18 +107,6 @@ jobs:
               with:
                   sarif_file: snyk-iac.sarif
                   category: snyk-iac
-        services:
-            postgres:
-                image: postgres:16
-                env:
-                    POSTGRES_DB: testdb
-                    POSTGRES_USER: testuser
-                    POSTGRES_PASSWORD: testpass
-                ports:
-                    - 5432:5432
-                options: >-
-                    --health-cmd="pg_isready -U testuser -d testdb"
-                    --health-interval=5s --health-timeout=3s --health-retries=20
 
     docker:
         if: github.ref == 'refs/heads/main'   # Only on main branch

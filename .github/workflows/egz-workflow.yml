@@ -67,6 +67,7 @@ jobs:
                     --health-cmd="pg_isready -U testuser -d testdb"
                     --health-interval=5s --health-timeout=3s --health-retries=20
     security:
+        needs: tests   # Wait for tests to pass
         runs-on: ubuntu-latest
         permissions:
             contents: read
@@ -81,7 +82,7 @@ jobs:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
               with:
                   args: --file=app/requirements.txt --severity-threshold=high --sarif-file-output=snyk-deps.sarif --skip-unresolved
-              continue-on-error: true
+              continue-on-error: false   # Fail pipeline if high/critical vulnerabilities found
               
             # Snyk Infrastructure as Code scan
             - name: Snyk - IaC scan (Kubernetes)
@@ -90,7 +91,7 @@ jobs:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
               with:
                   args: --severity-threshold=high deploy/ --sarif-file-output=snyk-iac.sarif
-              continue-on-error: true
+              continue-on-error: false   # Fail pipeline if IaC security issues found
               
             # Upload Snyk dependencies results to GitHub Security tab
             - name: Upload Snyk dependencies results
@@ -110,7 +111,7 @@ jobs:
 
     docker:
         if: github.ref == 'refs/heads/main'   # Only on main branch
-        needs: tests                          # Wait for tests to pass
+        needs: [tests, security]              # Wait for tests and security to pass
         runs-on: ubuntu-latest
         permissions:
             contents: read

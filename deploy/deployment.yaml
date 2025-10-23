@@ -27,36 +27,36 @@ spec:
               memory: "128Mi"
               cpu: "100m"
           env:
-            # Todas las variables desde UN SOLO Secret
+            # All database connection settings from secret
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
-                  name: db-conn
+                  name: secrets-db
                   key: DB_HOST
             - name: DB_NAME
               valueFrom:
                 secretKeyRef:
-                  name: db-conn
+                  name: secrets-db
                   key: DB_NAME
             - name: DB_USER
               valueFrom:
                 secretKeyRef:
-                  name: db-conn
+                  name: secrets-db
                   key: DB_USER
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: db-conn
+                  name: secrets-db
                   key: DB_PASSWORD
             - name: DB_PORT
               valueFrom:
                 secretKeyRef:
-                  name: db-conn
+                  name: secrets-db
                   key: DB_PORT
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: db-conn
+                  name: secrets-db
                   key: DATABASE_URL
             - name: PORT
               value: "5000"

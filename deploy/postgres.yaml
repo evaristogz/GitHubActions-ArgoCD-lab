@@ -11,13 +11,14 @@ spec:
   selector:
     app: postgres
 ---
-# Deployment for PostgreSQL database
+# StatefulSet for PostgreSQL database (better for databases)
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: postgres
   namespace: kc
 spec:
+  serviceName: postgres
   replicas: 1
   selector:
     matchLabels:
@@ -55,6 +56,8 @@ spec:
                 secretKeyRef:
                   name: secrets-db
                   key: DB_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           readinessProbe:
             exec:
               command: ["sh", "-c", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -63,7 +66,17 @@ spec:
           volumeMounts:
             - name: init-sql
               mountPath: /docker-entrypoint-initdb.d
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
       volumes:
         - name: init-sql
           configMap:
             name: postgres-init
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

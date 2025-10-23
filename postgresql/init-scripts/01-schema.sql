@@ -1,4 +1,0 @@
-CREATE TABLE IF NOT EXISTS visitas (
-    id SERIAL PRIMARY KEY,
-    fecha_hora TIMESTAMP NOT NULL
-);

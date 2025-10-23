@@ -76,7 +76,7 @@ jobs:
                   path: coverage.xml
 
             # SonarCloud analysis
-            - name: SonarCloud Scan
+            - name: 🔎 SonarCloud Scan
               uses: SonarSource/sonarqube-scan-action@v6
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -155,7 +155,7 @@ jobs:
                 echo "---"
             
             # Snyk security scan for dependencies (you can use --skip-unresolved)
-            - name: Snyk - Dependencies scan
+            - name: 🔎 Snyk - Dependencies scan
               uses: snyk/actions/python@master
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -164,7 +164,7 @@ jobs:
               continue-on-error: false   # Fail pipeline if high/critical vulnerabilities found
               
             # Snyk Infrastructure as Code scan
-            - name: Snyk - IaC scan (Kubernetes)
+            - name: 🔎 Snyk - IaC scan (Kubernetes)
               uses: snyk/actions/iac@master
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -236,7 +236,7 @@ jobs:
                   cache-to: type=gha,mode=max
 
             # Snyk container security scan
-            - name: Snyk - Container scan
+            - name: 🔎 Snyk - Container scan
               uses: snyk/actions/docker@master
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

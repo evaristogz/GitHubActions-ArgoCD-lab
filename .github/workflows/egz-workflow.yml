@@ -45,7 +45,7 @@ jobs:
                   PYTHONPATH: .
                   DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
               run: |
-                pytest --cov=app --cov-report=xml --cov-report=term -q
+                pytest --cov=app --cov-report=xml --cov-report=term --junitxml=test-results.xml -q
 
             # Upload coverage report
             - name: Upload coverage report
@@ -53,6 +53,21 @@ jobs:
               with:
                   name: pytest-coverage-xml
                   path: coverage.xml
+
+            # SonarCloud analysis
+            - name: SonarCloud Scan
+              uses: SonarSource/sonarcloud-github-action@master
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+              with:
+                  args: >
+                    -Dsonar.projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab
+                    -Dsonar.organization=evaristogz
+                    -Dsonar.python.coverage.reportPaths=coverage.xml
+                    -Dsonar.sources=app/
+                    -Dsonar.tests=tests/
+                    -Dsonar.python.xunit.reportPath=test-results.xml
 
         services:
             postgres:

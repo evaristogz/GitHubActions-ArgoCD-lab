@@ -33,12 +33,31 @@ jobs:
 
             # Check code style and linting
             - name: ⬇️ Code style (Black)
-              run: black --check app tests
+              id: black-check
+              run: |
+                if ! black --check app tests; then
+                  echo "::warning title=Black Code Style::Code formatting issues found. Run 'black app tests' to fix them."
+                  echo "::warning file=tests/test_db_ping.py::This file needs reformatting with Black"
+                  echo "Files that need reformatting:"
+                  black --check app tests --diff
+                  exit 0  # Don't fail the step, just show warnings
+                else
+                  echo "✅ Code style is compliant with Black"
+                fi
               continue-on-error: true   # Info mode
 
             # Linter (Ruff)
             - name: ⬇️ Lint (Ruff)
-              run: ruff check app tests
+              id: ruff-check
+              run: |
+                if ! ruff check app tests; then
+                  echo "::warning title=Ruff Linter::Linting issues found. Run 'ruff check app tests --fix' to fix them."
+                  echo "Linting issues details:"
+                  ruff check app tests --output-format=github
+                  exit 0  # Don't fail the step, just show warnings
+                else
+                  echo "✅ Code passes all linting checks"
+                fi
               continue-on-error: true   # Info mode
 
             # Run tests

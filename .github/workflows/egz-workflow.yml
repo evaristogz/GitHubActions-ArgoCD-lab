@@ -103,46 +103,37 @@ jobs:
                   -Dsonar.tests=tests/
                   -Dsonar.verbose=true
             
-            # Quality Gate Check with API
+            # Quality Gate Check (simplified)
             - name: Check Quality Gate Status
               run: |
-                echo "Waiting for SonarCloud to process results..."
+                echo "Checking SonarCloud Quality Gate..."
+                sleep 15  # Give SonarCloud time to process
                 
-                # Wait for processing with retry logic
-                for i in {1..6}; do
-                  echo "Attempt $i/6: Checking Quality Gate status..."
-                  
-                  # Get branch name
-                  BRANCH_NAME=${GITHUB_REF#refs/heads/}
-                  echo "Checking branch: $BRANCH_NAME"
-                  
-                  # API call with branch parameter
-                  RESPONSE=$(curl -s -u $SONAR_TOKEN: \
-                    "https://sonarcloud.io/api/qualitygates/project_status?projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME" \
-                    || echo '{"projectStatus":{"status":"ERROR"}}')
-                  
-                  echo "API Response: $RESPONSE"
-                  
-                  QUALITY_GATE_STATUS=$(echo $RESPONSE | jq -r '.projectStatus.status // "NONE"')
-                  echo "Quality Gate Status: $QUALITY_GATE_STATUS"
-                  
-                  if [ "$QUALITY_GATE_STATUS" = "OK" ]; then
+                BRANCH_NAME=${GITHUB_REF#refs/heads/}
+                echo "Branch: $BRANCH_NAME"
+                
+                # Single API call with fallback
+                RESPONSE=$(curl -s -u $SONAR_TOKEN: \
+                  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME" \
+                  || echo '{"projectStatus":{"status":"NONE"}}')
+                
+                STATUS=$(echo $RESPONSE | jq -r '.projectStatus.status // "NONE"')
+                echo "Quality Gate Status: $STATUS"
+                
+                case $STATUS in
+                  "OK")
                     echo "✅ Quality Gate passed!"
-                    exit 0
-                  elif [ "$QUALITY_GATE_STATUS" = "ERROR" ]; then
+                    ;;
+                  "ERROR")
                     echo "❌ Quality Gate failed!"
+                    echo "Check details: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME"
                     exit 1
-                  elif [ "$QUALITY_GATE_STATUS" != "NONE" ]; then
-                    echo "❌ Quality Gate status: $QUALITY_GATE_STATUS"
-                    exit 1
-                  fi
-                  
-                  echo "Still processing... waiting 30 seconds"
-                  sleep 30
-                done
-                
-                echo "⚠️ Quality Gate check timed out - treating as informational"
-                echo "Check manually at: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME"
+                    ;;
+                  *)
+                    echo "⚠️ Quality Gate status uncertain: $STATUS"
+                    echo "Manual check: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME"
+                    ;;
+                esac
               env:
                 SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
               continue-on-error: true

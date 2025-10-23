@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kc-visit-counter
+  namespace: kc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kc-visit-counter
+  template:
+    metadata:
+      labels:
+        app: kc-visit-counter
+    spec:
+      containers:
+        - name: kc-visit-counter
+          image: ghcr.io/EvaristoGZ/githubactions-argocd-lab/kc-visit-counter:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10

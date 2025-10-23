@@ -1,0 +1,26 @@
+# kind-cluster.yaml
+# Kind configuration file for a Kubernetes cluster named "kc-visit-counter"
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: "kc-visit-counter"
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # Expose Flask app port (5000) to host port 8080
+      - containerPort: 5000
+        hostPort: 8080
+        protocol: TCP
+    kubeadmConfigPatches:
+      # Useful adjustment if you later use Ingress with self-signed certificates
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+            authorization-mode: "AlwaysAllow"
+containerdConfigPatches:
+  # Allows pulling public images (GHCR, Docker Hub) without friction
+  - |
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."ghcr.io"]
+      endpoint = ["https://ghcr.io"]

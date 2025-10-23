@@ -20,11 +20,18 @@ spec:
           ports:
             - containerPort: 5000
           env:
+            - name: APP_ENV
+              value: "prod"
+            - name: DATABASE_URL
+              valueFrom:
+              secretKeyRef:
+                name: db-conn
+                key: url
             - name: PORT
               value: "5000"
           readinessProbe:
             httpGet:
               path: /
               port: 5000
-            initialDelaySeconds: 5
+            initialDelaySeconds: 15
             periodSeconds: 10

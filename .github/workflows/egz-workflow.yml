@@ -63,15 +63,25 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
             
-            # SonarCloud Quality Gate Check
-            - name: SonarCloud Quality Gate check
-              id: sonarqube-quality-gate-check
-              uses: sonarqube-quality-gate-action@master
-              timeout-minutes: 5
+            # Quality Gate Check with API
+            - name: Check Quality Gate Status
+              run: |
+                # Wait for processing and check quality gate
+                sleep 10
+                QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: \
+                  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab" \
+                  | jq -r '.projectStatus.status')
+                
+                echo "Quality Gate Status: $QUALITY_GATE_STATUS"
+                
+                if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
+                  echo "❌ Quality Gate failed!"
+                  exit 1
+                else
+                  echo "✅ Quality Gate passed!"
+                fi
               env:
                 SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-              with:
-                scanMetadataReportFile: target/sonar/report-task.txt
 
         services:
             postgres:

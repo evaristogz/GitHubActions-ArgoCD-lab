@@ -1,0 +1,23 @@
+[run]
+source = app/
+relative_files = True
+branch = True
+omit = 
+    tests/*
+    */__pycache__/*
+    */venv/*
+    */.venv/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+
+[xml]
+output = coverage.xml
+
+[html]
+directory = htmlcov

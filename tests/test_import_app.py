@@ -7,7 +7,12 @@ def test_can_import_app():
     """Test basic import of app module"""
     with patch("psycopg2.connect", return_value=MagicMock()), patch(
         "time.sleep"
-    ), patch("os.makedirs"), patch("logging.FileHandler", return_value=Mock()):
+    ), patch("os.makedirs"), patch("logging.FileHandler") as mock_handler:
+
+        # Configure handler mock
+        mock_file_handler = MagicMock()
+        mock_file_handler.level = 0
+        mock_handler.return_value = mock_file_handler
 
         # Simple import test
         import app.app

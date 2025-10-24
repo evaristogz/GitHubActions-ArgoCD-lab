@@ -12,10 +12,15 @@ def test_imports_and_basic_setup():
     with patch("psycopg2.connect", return_value=mock_conn) as mock_connect, patch(
         "time.sleep"
     ), patch("os.makedirs") as mock_makedirs, patch(
-        "logging.FileHandler", return_value=Mock()
-    ):
+        "logging.FileHandler"
+    ) as mock_handler:
 
         mock_conn.cursor.return_value = mock_cursor
+        
+        # Configure the file handler mock to have a level attribute
+        mock_file_handler = MagicMock()
+        mock_file_handler.level = 0  # Set a numeric level
+        mock_handler.return_value = mock_file_handler
 
         # Import the module - this should execute most of the initialization code
         import app.app
@@ -48,9 +53,14 @@ def test_route_execution():
 
     with patch("psycopg2.connect", return_value=mock_conn), patch("time.sleep"), patch(
         "os.makedirs"
-    ), patch("logging.FileHandler", return_value=Mock()):
+    ), patch("logging.FileHandler") as mock_handler:
 
         mock_conn.cursor.return_value = mock_cursor
+        
+        # Configure the file handler mock
+        mock_file_handler = MagicMock()
+        mock_file_handler.level = 0
+        mock_handler.return_value = mock_file_handler
 
         import app.app
 
@@ -70,11 +80,16 @@ def test_error_handling():
 
     with patch("psycopg2.connect", return_value=mock_conn), patch("time.sleep"), patch(
         "os.makedirs"
-    ), patch("logging.FileHandler", return_value=Mock()):
+    ), patch("logging.FileHandler") as mock_handler:
 
         mock_conn.cursor.return_value = mock_cursor
         # Make the database operation fail
         mock_cursor.execute.side_effect = Exception("Database error")
+        
+        # Configure handler mock
+        mock_file_handler = MagicMock()
+        mock_file_handler.level = 0
+        mock_handler.return_value = mock_file_handler
 
         import app.app
 

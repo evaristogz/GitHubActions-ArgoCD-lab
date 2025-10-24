@@ -68,7 +68,7 @@ jobs:
                   DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
               run: |
                 # Ejecutar tests con coverage desde el directorio raíz
-                pytest tests/ --cov=app --cov-report=xml:coverage.xml --cov-report=term --cov-branch --junitxml=test-results.xml -v
+                pytest tests/ --cov=app --cov-report=xml:coverage.xml --cov-report=term --cov-branch --junitxml=test-results.xml -v --cov-config=.coveragerc
                 
                 # Verificar que se generó el archivo de cobertura
                 echo "Coverage report files generated:"
@@ -90,14 +90,26 @@ jobs:
                   path: coverage.xml
 
             # Verify coverage file before SonarCloud
-            - name: Verify coverage file exists
+            - name: Verify coverage file exists and analyze content
               run: |
-                echo "Checking if coverage.xml exists and has content..."
+                echo "🔍 Checking if coverage.xml exists and has content..."
                 if [ -f coverage.xml ]; then
                   echo "✅ coverage.xml found"
                   echo "File size: $(wc -c < coverage.xml) bytes"
-                  echo "First 10 lines of coverage.xml:"
-                  head -10 coverage.xml
+                  echo "Line count: $(wc -l < coverage.xml) lines"
+                  
+                  echo "📄 First 15 lines of coverage.xml:"
+                  head -15 coverage.xml
+                  
+                  echo "🔍 Searching for 'app/' references in coverage.xml:"
+                  grep -n "app/" coverage.xml || echo "❌ No 'app/' references found!"
+                  
+                  echo "🔍 Searching for source file references:"
+                  grep -n "<source>" coverage.xml || echo "❌ No source references found!"
+                  
+                  echo "📊 Coverage statistics from XML:"
+                  grep -E "(lines-covered|lines-valid|line-rate)" coverage.xml || echo "❌ No coverage stats found!"
+                  
                 else
                   echo "❌ coverage.xml not found!"
                   ls -la *.xml || echo "No XML files found"
@@ -110,6 +122,14 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+              with:
+                args: >
+                  -Dsonar.verbose=true
+                  -Dsonar.python.coverage.reportPaths=coverage.xml
+                  -Dsonar.python.xunit.reportPath=test-results.xml
+                  -Dsonar.sources=app/
+                  -Dsonar.tests=tests/
+                  -Dsonar.sourceEncoding=UTF-8
             
             # Quality Gate Check (simplified)
             - name: Check Quality Gate Status

@@ -25,7 +25,7 @@ jobs:
               run: |
                   python -m pip install --upgrade pip
                   pip install -r app/requirements.txt
-                  pip install pytest pytest-cov pytest-xvfb coverage
+                  pip install pytest pytest-cov pytest-xvfb coverage pytest-mock
 
             # Install linters
             - name: Install linters
@@ -68,7 +68,7 @@ jobs:
                   DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
               run: |
                 # Ejecutar tests con coverage desde el directorio raíz
-                pytest tests/ --cov=app --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml -v
+                pytest tests/ --cov=app --cov-report=xml:coverage.xml --cov-report=term --cov-branch --junitxml=test-results.xml -v
                 
                 # Verificar que se generó el archivo de cobertura
                 echo "Coverage report files generated:"

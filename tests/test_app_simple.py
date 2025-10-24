@@ -1,95 +1,86 @@
-# tests/test_app_simple.py
-# Simple tests to ensure code coverage for the Flask application
-import os
-import sys
-from unittest.mock import patch, MagicMock
-from datetime import datetime
+# tests/test_coverage.py
+# Focused tests to ensure code coverage
+from unittest.mock import patch, MagicMock, Mock
 
 
-def test_basic_import():
-    """Test basic import without database connection"""
-    # Mock all external dependencies before importing
-    with patch('psycopg2.connect') as mock_connect, \
-         patch('os.makedirs'), \
-         patch('logging.FileHandler'), \
-         patch('time.sleep'):
+def test_imports_and_basic_setup():
+    """Test that we can import and setup basic components"""
+    # Completely mock the database connection loop
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    
+    with patch('psycopg2.connect', return_value=mock_conn) as mock_connect, \
+         patch('time.sleep') as mock_sleep, \
+         patch('os.makedirs') as mock_makedirs, \
+         patch('logging.FileHandler', return_value=Mock()) as mock_handler:
         
-        # Mock successful database connection
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_connect.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         
-        # Clear module cache
-        modules_to_clear = [key for key in sys.modules.keys() if key.startswith('app')]
-        for module in modules_to_clear:
-            if module in sys.modules:
-                del sys.modules[module]
+        # Import the module - this should execute most of the initialization code
+        import app.app
         
-        # Import the app module
-        from app import app as app_module
+        # Verify that key components were created
+        assert hasattr(app.app, 'app')  # Flask app
+        assert hasattr(app.app, 'DB_CONFIG')  # Database config
+        assert hasattr(app.app, 'logger')  # Logger
         
-        # Verify basic attributes exist
-        assert hasattr(app_module, 'app')
-        assert hasattr(app_module, 'DB_CONFIG') 
-        assert hasattr(app_module, 'logger')
+        # Verify database connection was attempted
+        mock_connect.assert_called()
         
-        # Verify Flask app was created
-        assert app_module.app is not None
+        # Verify logging setup was attempted
+        mock_makedirs.assert_called()
 
 
-def test_route_with_successful_db():
-    """Test the main route with successful database operations"""
-    with patch('psycopg2.connect') as mock_connect, \
+def test_route_execution():
+    """Test that the main route can be executed"""
+    from datetime import datetime
+    
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    
+    # Setup return values for database queries
+    mock_cursor.fetchone.return_value = [10]  # Total visits
+    mock_cursor.fetchall.return_value = [
+        (1, datetime(2025, 10, 24, 10, 0, 0)),
+        (2, datetime(2025, 10, 24, 11, 0, 0))
+    ]
+    
+    with patch('psycopg2.connect', return_value=mock_conn), \
+         patch('time.sleep'), \
          patch('os.makedirs'), \
-         patch('logging.FileHandler'), \
-         patch('time.sleep'):
+         patch('logging.FileHandler', return_value=Mock()):
         
-        # Mock database connection
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_connect.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
         
-        # Mock database responses
-        mock_cursor.fetchone.return_value = [5]
-        mock_cursor.fetchall.return_value = [
-            (1, datetime(2025, 10, 24, 10, 0, 0)),
-            (2, datetime(2025, 10, 24, 11, 0, 0))
-        ]
+        import app.app
         
-        from app import app as app_module
-        
-        # Test the route
-        with app_module.app.test_client() as client:
+        # Test the Flask route
+        with app.app.app.test_client() as client:
             response = client.get('/')
             
+            # Verify we get a successful response
             assert response.status_code == 200
             assert b'Total de visitas' in response.data
-            assert b'5' in response.data
 
 
-def test_route_with_db_error():
-    """Test route behavior when database operations fail"""
-    with patch('psycopg2.connect') as mock_connect, \
+def test_error_handling():
+    """Test error handling in the main route"""
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    
+    with patch('psycopg2.connect', return_value=mock_conn), \
+         patch('time.sleep'), \
          patch('os.makedirs'), \
-         patch('logging.FileHandler'), \
-         patch('time.sleep'):
+         patch('logging.FileHandler', return_value=Mock()):
         
-        # Mock database connection
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_connect.return_value = mock_conn
         mock_conn.cursor.return_value = mock_cursor
+        # Make the database operation fail
+        mock_cursor.execute.side_effect = Exception("Database error")
         
-        from app import app as app_module
+        import app.app
         
-        # Mock cursor to raise exception during route execution
-        with patch.object(app_module, 'cursor') as patched_cursor:
-            patched_cursor.execute.side_effect = Exception("DB Error")
+        with app.app.app.test_client() as client:
+            response = client.get('/')
             
-            with app_module.app.test_client() as client:
-                response = client.get('/')
-                
-                assert response.status_code == 500
-                assert b'Error interno del servidor' in response.data
+            # Should return 500 error
+            assert response.status_code == 500

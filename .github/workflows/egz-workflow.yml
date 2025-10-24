@@ -110,6 +110,18 @@ jobs:
                   echo "📊 Coverage statistics from XML:"
                   grep -E "(lines-covered|lines-valid|line-rate)" coverage.xml || echo "❌ No coverage stats found!"
                   
+                  echo "🔧 Let's try to fix the coverage.xml paths for SonarCloud..."
+                  # Create a backup
+                  cp coverage.xml coverage.xml.backup
+                  
+                  # Try to fix the paths - replace absolute paths with relative ones
+                  sed -i 's|filename="app/|filename="app/|g' coverage.xml
+                  sed -i 's|filename="|filename="app/|g' coverage.xml
+                  sed -i 's|filename="app/app/|filename="app/|g' coverage.xml
+                  
+                  echo "🔍 After path fixing:"
+                  grep -A 2 -B 2 'filename=' coverage.xml | head -10
+                  
                 else
                   echo "❌ coverage.xml not found!"
                   ls -la *.xml || echo "No XML files found"
@@ -130,6 +142,8 @@ jobs:
                   -Dsonar.sources=app/
                   -Dsonar.tests=tests/
                   -Dsonar.sourceEncoding=UTF-8
+                  -Dsonar.projectBaseDir=${{ github.workspace }}
+                  -Dsonar.working.directory=${{ github.workspace }}
             
             # Quality Gate Check (simplified)
             - name: Check Quality Gate Status

@@ -1,6 +1,6 @@
 [run]
 source = app/
-relative_files = False
+relative_files = True
 branch = True
 omit = 
     tests/*

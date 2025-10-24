@@ -89,8 +89,18 @@ jobs:
             - name: Upload coverage report
               uses: actions/upload-artifact@v4
               with:
-                  name: pytest-coverage-xml
+                  name: coverage-xml
                   path: coverage.xml
+
+            # SonarCloud Setup and Analysis
+            - name: Setup Python
+              uses: actions/setup-python@v2
+              with:
+                python-version: ${{ matrix.python }}
+            - name: Install tox and any other packages
+              run: pip install tox
+            - name: Run tox
+              run: tox -e py
 
             # SonarCloud analysis
             - name: 🔎 SonarCloud Scan

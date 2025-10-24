@@ -516,7 +516,7 @@ livenessProbe:
   periodSeconds: 10
 ```
 
-### Métricas Disponibles
+### Métricas disponibles
 
 - **🔍 GitHub Actions**: Métricas de pipeline y deployment
 - **📊 SonarCloud**: Métricas de calidad y coverage

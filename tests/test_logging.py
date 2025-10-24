@@ -3,17 +3,18 @@
 from unittest.mock import patch, MagicMock
 
 
-@patch('logging.FileHandler')
-@patch('os.makedirs')
-def test_logging_configuration(mock_makedirs, mock_file_handler):
+def test_logging_configuration():
     """Test that logging is configured correctly"""
-    
-    # Mock file operations
-    mock_makedirs.return_value = None
-    mock_file_handler.return_value = MagicMock()
-    
-    # Mock psycopg2 to avoid database connection during import
-    with patch('psycopg2.connect') as mock_connect:
+    with patch('psycopg2.connect') as mock_connect, \
+         patch('os.makedirs') as mock_makedirs, \
+         patch('logging.FileHandler') as mock_file_handler, \
+         patch('time.sleep'):
+        
+        # Mock file operations
+        mock_makedirs.return_value = None
+        mock_file_handler.return_value = MagicMock()
+        
+        # Mock database connection
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
         mock_connect.return_value = mock_conn  
@@ -29,15 +30,16 @@ def test_logging_configuration(mock_makedirs, mock_file_handler):
         mock_makedirs.assert_called_with("/var/log/kc-visit-counter", exist_ok=True)
 
 
-@patch('logging.FileHandler', side_effect=Exception("Cannot create file"))
-@patch('os.makedirs')  
-def test_logging_fallback_on_file_error(mock_makedirs, mock_file_handler):
+def test_logging_fallback_on_file_error():
     """Test logging fallback when file handler creation fails"""
-    
-    mock_makedirs.return_value = None
-    
-    # Mock psycopg2 to avoid database connection during import
-    with patch('psycopg2.connect') as mock_connect:
+    with patch('psycopg2.connect') as mock_connect, \
+         patch('os.makedirs') as mock_makedirs, \
+         patch('logging.FileHandler', side_effect=Exception("Cannot create file")), \
+         patch('time.sleep'):
+        
+        mock_makedirs.return_value = None
+        
+        # Mock database connection
         mock_conn = MagicMock()
         mock_cursor = MagicMock()
         mock_connect.return_value = mock_conn

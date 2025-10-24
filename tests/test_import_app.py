@@ -1,6 +1,5 @@
 # tests/test_import_app.py
 # Test to check if the main application module can be imported.
-import pytest
 import os
 import sys
 from unittest.mock import patch, MagicMock

@@ -1,6 +1,5 @@
 # tests/test_app_simple.py
 # Simple tests to ensure code coverage for the Flask application
-import pytest
 import os
 import sys
 from unittest.mock import patch, MagicMock, Mock

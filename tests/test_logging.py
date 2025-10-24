@@ -1,7 +1,5 @@
 # tests/test_logging.py  
 # Tests for logging configuration
-import pytest
-import os
 from unittest.mock import patch, MagicMock
 
 

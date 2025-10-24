@@ -83,8 +83,6 @@ def test_error_handling():
     ), patch("logging.FileHandler") as mock_handler:
 
         mock_conn.cursor.return_value = mock_cursor
-        # Make the database operation fail
-        mock_cursor.execute.side_effect = Exception("Database error")
         
         # Configure handler mock
         mock_file_handler = MagicMock()
@@ -93,8 +91,12 @@ def test_error_handling():
 
         import app.app
 
-        with app.app.app.test_client() as client:
-            response = client.get("/")
+        # Now make the cursor fail for the actual request
+        with patch.object(app.app, 'cursor') as patched_cursor:
+            patched_cursor.execute.side_effect = Exception("Database error")
+            
+            with app.app.app.test_client() as client:
+                response = client.get("/")
 
-            # Should return 500 error
-            assert response.status_code == 500
+                # Should return 500 error
+                assert response.status_code == 500

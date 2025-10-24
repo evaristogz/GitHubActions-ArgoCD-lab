@@ -1,6 +1,6 @@
 # tests/test_import_app.py
 # Test to check if the main application module can be imported.
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 
 
 def test_can_import_app():

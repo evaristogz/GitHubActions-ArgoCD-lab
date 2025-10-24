@@ -1,6 +1,6 @@
 # tests/test_coverage.py
 # Focused tests to ensure code coverage
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 
 
 def test_imports_and_basic_setup():
@@ -16,7 +16,7 @@ def test_imports_and_basic_setup():
     ) as mock_handler:
 
         mock_conn.cursor.return_value = mock_cursor
-        
+
         # Configure the file handler mock to have a level attribute
         mock_file_handler = MagicMock()
         mock_file_handler.level = 0  # Set a numeric level
@@ -56,7 +56,7 @@ def test_route_execution():
     ), patch("logging.FileHandler") as mock_handler:
 
         mock_conn.cursor.return_value = mock_cursor
-        
+
         # Configure the file handler mock
         mock_file_handler = MagicMock()
         mock_file_handler.level = 0
@@ -83,7 +83,7 @@ def test_error_handling():
     ), patch("logging.FileHandler") as mock_handler:
 
         mock_conn.cursor.return_value = mock_cursor
-        
+
         # Configure handler mock
         mock_file_handler = MagicMock()
         mock_file_handler.level = 0
@@ -92,9 +92,9 @@ def test_error_handling():
         import app.app
 
         # Now make the cursor fail for the actual request
-        with patch.object(app.app, 'cursor') as patched_cursor:
+        with patch.object(app.app, "cursor") as patched_cursor:
             patched_cursor.execute.side_effect = Exception("Database error")
-            
+
             with app.app.app.test_client() as client:
                 response = client.get("/")
 

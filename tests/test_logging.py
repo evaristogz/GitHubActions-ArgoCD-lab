@@ -2,13 +2,12 @@
 # Tests for logging configuration
 from unittest.mock import patch, MagicMock
 
+
 def test_logging_setup():
     """Test that logging is set up during module import"""
     with patch("psycopg2.connect", return_value=MagicMock()), patch(
         "time.sleep"
-    ), patch("os.makedirs") as mock_makedirs, patch(
-        "logging.FileHandler"
-    ) as mock_handler:
+    ), patch("os.makedirs"), patch("logging.FileHandler") as mock_handler:
 
         # Configure handler mock - this needs to NOT raise an exception
         mock_file_handler = MagicMock()
@@ -19,8 +18,8 @@ def test_logging_setup():
         import app.app
 
         # Just verify the module loaded successfully and has logging
-        assert hasattr(app.app, 'logger')
-        
-        # If makedirs wasn't called, that's actually OK - 
+        assert hasattr(app.app, "logger")
+
+        # If makedirs wasn't called, that's actually OK -
         # it means the logging setup succeeded or failed gracefully
         # The important thing is coverage was achieved

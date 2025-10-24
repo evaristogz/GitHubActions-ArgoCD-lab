@@ -2,17 +2,26 @@
 # Test to check if the main application module can be imported.
 import pytest
 import os
+import sys
 from unittest.mock import patch, MagicMock
+from datetime import datetime
 
 
-def test_can_import_app():
+@patch('psycopg2.connect')
+def test_can_import_app(mock_connect):
     """Test basic import of app module"""
-    import app
-    assert hasattr(app, 'app')  # Flask app exists
-    assert hasattr(app, 'DB_CONFIG')  # DB config exists
+    # Mock database to allow import
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_connect.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
+    
+    from app import app as app_module
+    assert hasattr(app_module, 'app')  # Flask app exists
+    assert hasattr(app_module, 'DB_CONFIG')  # DB config exists
 
 
-@patch('app.psycopg2.connect')
+@patch('psycopg2.connect')
 def test_app_initialization(mock_connect):
     """Test that app initializes correctly with mocked database"""
     # Mock database connection
@@ -24,25 +33,27 @@ def test_app_initialization(mock_connect):
     # Set test environment variables
     test_env = {
         'DB_NAME': 'testdb',
-        'DB_USER': 'testuser',
+        'DB_USER': 'testuser', 
         'DB_PASSWORD': 'testpass',
         'DB_HOST': 'localhost',
         'DB_PORT': '5432'
     }
     
     with patch.dict(os.environ, test_env):
-        # Reimport to trigger initialization with new env vars
-        import importlib
-        import app
-        importlib.reload(app)
+        # Clear any existing module cache
+        if 'app.app' in sys.modules:
+            del sys.modules['app.app']
+        
+        # Import the app module
+        from app import app as app_module
         
         # Verify database config was set correctly
-        assert app.DB_CONFIG['dbname'] == 'testdb'
-        assert app.DB_CONFIG['user'] == 'testuser'
-        assert app.DB_CONFIG['host'] == 'localhost'
+        assert app_module.DB_CONFIG['dbname'] == 'testdb'
+        assert app_module.DB_CONFIG['user'] == 'testuser'
+        assert app_module.DB_CONFIG['host'] == 'localhost'
 
 
-@patch('app.psycopg2.connect')
+@patch('psycopg2.connect')
 def test_flask_app_routes(mock_connect):
     """Test Flask app routes"""
     # Mock database connection and cursor
@@ -54,18 +65,18 @@ def test_flask_app_routes(mock_connect):
     # Mock database responses
     mock_cursor.fetchone.return_value = [5]  # Total visits
     mock_cursor.fetchall.return_value = [
-        (1, '2025-10-24 10:00:00'),
-        (2, '2025-10-24 11:00:00')
+        (1, datetime(2025, 10, 24, 10, 0, 0)),
+        (2, datetime(2025, 10, 24, 11, 0, 0))
     ]
     
-    # Import app after mocking
-    import app
+    # Import app module
+    from app import app as app_module
     
     # Test the Flask app
-    with app.app.test_client() as client:
+    with app_module.app.test_client() as client:
         # Mock the cursor and connection for this specific test
-        with patch.object(app, 'cursor', mock_cursor), \
-             patch.object(app, 'conn', mock_conn):
+        with patch.object(app_module, 'cursor', mock_cursor), \
+             patch.object(app_module, 'conn', mock_conn):
             
             response = client.get('/')
             

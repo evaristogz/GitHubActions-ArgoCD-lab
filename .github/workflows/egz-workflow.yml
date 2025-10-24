@@ -114,13 +114,20 @@ jobs:
                   # Create a backup
                   cp coverage.xml coverage.xml.backup
                   
-                  # Try to fix the paths - replace absolute paths with relative ones
-                  sed -i 's|filename="app/|filename="app/|g' coverage.xml
+                  # Fix the paths for SonarCloud - ensure they start with app/
                   sed -i 's|filename="|filename="app/|g' coverage.xml
                   sed -i 's|filename="app/app/|filename="app/|g' coverage.xml
                   
+                  # Also ensure we have the right source path
+                  sed -i 's|<source>.*</source>|<source>.</source>|g' coverage.xml
+                  
                   echo "🔍 After path fixing:"
                   grep -A 2 -B 2 'filename=' coverage.xml | head -10
+                  
+                  echo "🎯 Final validation for SonarCloud:"
+                  echo "   - Source path: $(grep -o '<source>.*</source>' coverage.xml)"
+                  echo "   - App files found: $(grep -c 'filename="app/' coverage.xml)"
+                  echo "   - Total coverage: $(grep -o 'line-rate="[^"]*"' coverage.xml | head -1)"
                   
                 else
                   echo "❌ coverage.xml not found!"
@@ -137,13 +144,6 @@ jobs:
               with:
                 args: >
                   -Dsonar.verbose=true
-                  -Dsonar.python.coverage.reportPaths=coverage.xml
-                  -Dsonar.python.xunit.reportPath=test-results.xml
-                  -Dsonar.sources=app/
-                  -Dsonar.tests=tests/
-                  -Dsonar.sourceEncoding=UTF-8
-                  -Dsonar.projectBaseDir=${{ github.workspace }}
-                  -Dsonar.working.directory=${{ github.workspace }}
             
             # Quality Gate Check (simplified)
             - name: Check Quality Gate Status

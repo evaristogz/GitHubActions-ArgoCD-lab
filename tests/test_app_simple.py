@@ -11,9 +11,9 @@ def test_imports_and_basic_setup():
 
     with patch("psycopg2.connect", return_value=mock_conn) as mock_connect, patch(
         "time.sleep"
-    ) as mock_sleep, patch("os.makedirs") as mock_makedirs, patch(
+    ), patch("os.makedirs") as mock_makedirs, patch(
         "logging.FileHandler", return_value=Mock()
-    ) as mock_handler:
+    ):
 
         mock_conn.cursor.return_value = mock_cursor
 

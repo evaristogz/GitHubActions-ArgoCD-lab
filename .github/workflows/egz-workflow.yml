@@ -306,3 +306,94 @@ jobs:
               with:
                   sarif_file: snyk-container.sarif
                   category: snyk-container
+
+    # Summary job - always runs to provide pipeline overview
+    summary:
+        if: always()  # Always run, regardless of other job outcomes
+        needs: [tests, security, docker]
+        runs-on: ubuntu-latest
+        steps:
+            - name: 📊 Pipeline Summary
+              run: |
+                echo "# 🚀 Pipeline Execution Summary" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+                echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+                echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                
+                # Job Status Summary
+                echo "## 📋 Job Results" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "| Job | Status | Description |" >> $GITHUB_STEP_SUMMARY
+                echo "|-----|--------|-------------|" >> $GITHUB_STEP_SUMMARY
+                
+                # Tests job status
+                if [ "${{ needs.tests.result }}" == "success" ]; then
+                  echo "| 🧪 **Tests** | ✅ Success | All tests passed with coverage analysis |" >> $GITHUB_STEP_SUMMARY
+                elif [ "${{ needs.tests.result }}" == "failure" ]; then
+                  echo "| 🧪 **Tests** | ❌ Failed | Tests failed or coverage issues |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| 🧪 **Tests** | ⏭️ Skipped | Tests were skipped |" >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                # Security job status
+                if [ "${{ needs.security.result }}" == "success" ]; then
+                  echo "| 🔒 **Security** | ✅ Success | No security vulnerabilities found |" >> $GITHUB_STEP_SUMMARY
+                elif [ "${{ needs.security.result }}" == "failure" ]; then
+                  echo "| 🔒 **Security** | ❌ Failed | Security vulnerabilities detected |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| 🔒 **Security** | ⏭️ Skipped | Security scan was skipped |" >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                # Docker job status (only runs on main)
+                if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+                  if [ "${{ needs.docker.result }}" == "success" ]; then
+                    echo "| 🐳 **Docker** | ✅ Success | Container built and pushed successfully |" >> $GITHUB_STEP_SUMMARY
+                  elif [ "${{ needs.docker.result }}" == "failure" ]; then
+                    echo "| 🐳 **Docker** | ❌ Failed | Container build or push failed |" >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "| 🐳 **Docker** | ⏭️ Skipped | Docker job was skipped |" >> $GITHUB_STEP_SUMMARY
+                  fi
+                else
+                  echo "| 🐳 **Docker** | ⏭️ Skipped | Only runs on main branch |" >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                echo "" >> $GITHUB_STEP_SUMMARY
+                
+                # Overall Status
+                echo "## 🎯 Overall Pipeline Status" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                
+                # Determine overall status
+                TESTS_OK="${{ needs.tests.result == 'success' }}"
+                SECURITY_OK="${{ needs.security.result == 'success' }}"
+                DOCKER_OK="${{ needs.docker.result == 'success' || needs.docker.result == 'skipped' }}"
+                
+                if [ "$TESTS_OK" == "true" ] && [ "$SECURITY_OK" == "true" ] && [ "$DOCKER_OK" == "true" ]; then
+                  echo "### ✅ **SUCCESS** - All critical jobs completed successfully!" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "🎉 Your code is ready for deployment!" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "### ❌ **FAILURE** - Some jobs failed or encountered issues" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "🔍 Please review the failed jobs above and fix any issues." >> $GITHUB_STEP_SUMMARY
+                  
+                  # Exit with error code if critical jobs failed
+                  if [ "$TESTS_OK" != "true" ] || [ "$SECURITY_OK" != "true" ]; then
+                    echo "💥 Critical jobs failed - marking pipeline as failed" >> $GITHUB_STEP_SUMMARY
+                    exit 1
+                  fi
+                fi
+                
+                # Additional metrics if available
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "## 📊 Quality Metrics" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "- **SonarCloud Analysis**: [View Report](https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=${{ github.ref_name }})" >> $GITHUB_STEP_SUMMARY
+                echo "- **Code Coverage**: Available in SonarCloud dashboard" >> $GITHUB_STEP_SUMMARY
+                echo "- **Security Scan**: Results uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
+                
+                if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+                  echo "- **Container Registry**: [View Images](https://github.com/${{ github.repository }}/pkgs/container/kc-visit-counter)" >> $GITHUB_STEP_SUMMARY
+                fi

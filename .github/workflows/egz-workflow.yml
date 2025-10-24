@@ -24,7 +24,8 @@ jobs:
             - name: Install deps
               run: |
                   python -m pip install --upgrade pip
-                  pip install -r app/requirements.txt pytest pytest-cov
+                  pip install -r app/requirements.txt
+                  pip install pytest pytest-cov pytest-xvfb coverage
 
             # Install linters
             - name: Install linters
@@ -63,17 +64,40 @@ jobs:
             # Run tests
             - name: Run tests
               env:
-                  PYTHONPATH: .
+                  PYTHONPATH: ${{ github.workspace }}
                   DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
               run: |
-                pytest --cov=app --cov-report=xml --cov-report=term --junitxml=test-results.xml -q
+                # Ejecutar tests con coverage desde el directorio raíz
+                pytest tests/ --cov=app --cov-report=xml:coverage.xml --cov-report=term --junitxml=test-results.xml -v
+                
+                # Verificar que se generó el archivo de cobertura
+                echo "Coverage report files generated:"
+                ls -la *.xml || echo "No XML files found"
+                
+                # Mostrar contenido del coverage.xml para debug
+                if [ -f coverage.xml ]; then
+                  echo "Coverage.xml content (first 20 lines):"
+                  head -20 coverage.xml
+                else
+                  echo "❌ coverage.xml not found!"
+                fi
 
             # Upload coverage report
             - name: Upload coverage report
               uses: actions/upload-artifact@v4
               with:
-                  name: pytest-coverage-xml
+                  name: coverage-xml
                   path: coverage.xml
+
+            # SonarCloud Setup and Analysis
+            - name: Setup Python
+              uses: actions/setup-python@v2
+              with:
+                python-version: ${{ matrix.python }}
+            - name: Install tox and any other packages
+              run: pip install tox
+            - name: Run tox
+              run: tox -e py
 
             # SonarCloud analysis
             - name: 🔎 SonarCloud Scan
@@ -81,47 +105,45 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+              with:
+                args: >
+                  -Dsonar.python.coverage.reportPaths=coverage.xml
+                  -Dsonar.python.xunit.reportPath=test-results.xml
+                  -Dsonar.sources=app/
+                  -Dsonar.tests=tests/
+                  -Dsonar.verbose=true
             
-            # Quality Gate Check with API
+            # Quality Gate Check (simplified)
             - name: Check Quality Gate Status
               run: |
-                echo "Waiting for SonarCloud to process results..."
+                echo "Checking SonarCloud Quality Gate..."
+                sleep 15  # Give SonarCloud time to process
                 
-                # Wait for processing with retry logic
-                for i in {1..6}; do
-                  echo "Attempt $i/6: Checking Quality Gate status..."
-                  
-                  # Get branch name
-                  BRANCH_NAME=${GITHUB_REF#refs/heads/}
-                  echo "Checking branch: $BRANCH_NAME"
-                  
-                  # API call with branch parameter
-                  RESPONSE=$(curl -s -u $SONAR_TOKEN: \
-                    "https://sonarcloud.io/api/qualitygates/project_status?projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME" \
-                    || echo '{"projectStatus":{"status":"ERROR"}}')
-                  
-                  echo "API Response: $RESPONSE"
-                  
-                  QUALITY_GATE_STATUS=$(echo $RESPONSE | jq -r '.projectStatus.status // "NONE"')
-                  echo "Quality Gate Status: $QUALITY_GATE_STATUS"
-                  
-                  if [ "$QUALITY_GATE_STATUS" = "OK" ]; then
+                BRANCH_NAME=${GITHUB_REF#refs/heads/}
+                echo "Branch: $BRANCH_NAME"
+                
+                # Single API call with fallback
+                RESPONSE=$(curl -s -u $SONAR_TOKEN: \
+                  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME" \
+                  || echo '{"projectStatus":{"status":"NONE"}}')
+                
+                STATUS=$(echo $RESPONSE | jq -r '.projectStatus.status // "NONE"')
+                echo "Quality Gate Status: $STATUS"
+                
+                case $STATUS in
+                  "OK")
                     echo "✅ Quality Gate passed!"
-                    exit 0
-                  elif [ "$QUALITY_GATE_STATUS" = "ERROR" ]; then
+                    ;;
+                  "ERROR")
                     echo "❌ Quality Gate failed!"
+                    echo "Check details: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME"
                     exit 1
-                  elif [ "$QUALITY_GATE_STATUS" != "NONE" ]; then
-                    echo "❌ Quality Gate status: $QUALITY_GATE_STATUS"
-                    exit 1
-                  fi
-                  
-                  echo "Still processing... waiting 30 seconds"
-                  sleep 30
-                done
-                
-                echo "⚠️ Quality Gate check timed out - treating as informational"
-                echo "Check manually at: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME"
+                    ;;
+                  *)
+                    echo "⚠️ Quality Gate status uncertain: $STATUS"
+                    echo "Manual check: https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME"
+                    ;;
+                esac
               env:
                 SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
               continue-on-error: true

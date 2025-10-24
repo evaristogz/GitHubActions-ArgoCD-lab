@@ -65,4 +65,4 @@ spec:
               path: /
               port: 5000
             initialDelaySeconds: 15
-            periodSeconds: 600   # Ten minutes because the Python app is a visit counter
+            periodSeconds: 90   # Ninety seconds because the Python app is a visit counter

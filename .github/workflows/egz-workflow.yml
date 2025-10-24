@@ -89,15 +89,20 @@ jobs:
                   name: coverage-xml
                   path: coverage.xml
 
-            # SonarCloud Setup and Analysis
-            - name: Setup Python
-              uses: actions/setup-python@v2
-              with:
-                python-version: ${{ matrix.python }}
-            - name: Install tox and any other packages
-              run: pip install tox
-            - name: Run tox
-              run: tox -e py
+            # Verify coverage file before SonarCloud
+            - name: Verify coverage file exists
+              run: |
+                echo "Checking if coverage.xml exists and has content..."
+                if [ -f coverage.xml ]; then
+                  echo "✅ coverage.xml found"
+                  echo "File size: $(wc -c < coverage.xml) bytes"
+                  echo "First 10 lines of coverage.xml:"
+                  head -10 coverage.xml
+                else
+                  echo "❌ coverage.xml not found!"
+                  ls -la *.xml || echo "No XML files found"
+                  exit 1
+                fi
 
             # SonarCloud analysis
             - name: 🔎 SonarCloud Scan
@@ -105,13 +110,6 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-              with:
-                args: >
-                  -Dsonar.python.coverage.reportPaths=coverage.xml
-                  -Dsonar.python.xunit.reportPath=test-results.xml
-                  -Dsonar.sources=app/
-                  -Dsonar.tests=tests/
-                  -Dsonar.verbose=true
             
             # Quality Gate Check (simplified)
             - name: Check Quality Gate Status

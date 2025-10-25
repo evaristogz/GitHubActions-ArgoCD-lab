@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-#### TESTS JOB ####
+#### START TESTS JOB ####
     tests:
         runs-on: ubuntu-latest
         steps:
@@ -194,8 +194,9 @@ jobs:
                 options: >-
                     --health-cmd="pg_isready -U testuser -d testdb"
                     --health-interval=5s --health-timeout=3s --health-retries=20
+#### END TESTS JOB ####
 
-#### SECURITY JOB ####
+#### START SECURITY JOB ####
     security:
         needs: tests   # Wait for tests to pass
         runs-on: ubuntu-latest
@@ -245,8 +246,9 @@ jobs:
               with:
                   sarif_file: snyk-iac.sarif
                   category: snyk-iac
+#### END SECURITY JOB ####
 
-#### DOCKER JOB ####
+#### START DOCKER JOB ####
     docker:
         if: github.ref == 'refs/heads/main'   # Only on main branch
         needs: [tests, security]              # Wait for tests and security to pass
@@ -311,8 +313,9 @@ jobs:
               with:
                   sarif_file: snyk-container.sarif
                   category: snyk-container
+#### END DOCKER JOB ####
 
-#### SUMMARY JOB ####
+#### START SUMMARY JOB ####
     summary:
         if: always()  # Always run, regardless of other job outcomes
         needs: [tests, security, docker]
@@ -521,3 +524,4 @@ jobs:
                     echo "Check the Docker job logs for build errors." >> $GITHUB_STEP_SUMMARY
                   fi
                 fi
+#### END SUMMARY JOB ####

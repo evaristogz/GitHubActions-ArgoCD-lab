@@ -75,47 +75,12 @@ El resultado final contempla un laboratorio con una arquitectura ficticia y simp
 
 
 ## 🏗️ Diagrama de arquitectura
-
-```mermaid
-graph TB
-    subgraph "Development"
-        DEV[👨‍💻 Developer]
-        GIT[📁 Git Repository]
-    end
-    
-    subgraph "CI/CD Pipeline"
-        GHA[🔄 GitHub Actions]
-        TEST[🧪 Tests]
-        SEC[🔒 Security Scan]
-        QA[📊 Quality Analysis]
-        BUILD[🐳 Docker Build]
-    end
-    
-    subgraph "Container Registry"
-        GHCR[📦 GitHub Container Registry]
-    end
-    
-    subgraph "Kubernetes Cluster"
-        ARGO[🔄 ArgoCD]
-        APP[🚀 Flask App]
-        DB[🗄️ PostgreSQL]
-    end
-    
-    DEV --> GIT
-    GIT --> GHA
-    GHA --> TEST
-    TEST --> SEC
-    SEC --> QA
-    QA --> BUILD
-    BUILD --> GHCR
-    GHCR --> ARGO
-    ARGO --> APP
-    APP --> DB
-```
+⮮ *Click para agrandar* ⮯
+[![GitHubActions-ArgoCD-lab Architecture](imgs/00-diagram.jpg)](imgs/00-diagram.jpg)
 
 ## 🔄 Pipeline CI/CD
 
-El pipeline está diseñado con **3 jobs secuenciales** que implementan quality gates progresivos:
+El pipeline está diseñado con **4 jobs secuenciales** que implementan quality gates progresivos:
 
 ### 1. 🧪 Tests Job: Calidad de código
 ```yaml
@@ -576,10 +541,10 @@ kind delete cluster --name local-k8s-cluster
 | 1 | **Repositorio GitHub** | [https://github.com/EvaristoGZ/GitHubActions-ArgoCD-lab](https://github.com/EvaristoGZ/GitHubActions-ArgoCD-lab) |
 | 2 | **Repositorio de artefactos** | [Ver repositorio](https://github.com/EvaristoGZ?tab=packages&repo_name=GitHubActions-ArgoCD-lab) |
 | 3 | **Pipeline CI/CD** | [Ver fichero *egz-workflow.yml*](.github/workflows/egz-workflow.yml) |
-| 4 | **Screenshots del pipeline** | [Ver imagen *04-pipeline.jpg*](#) |
+| 4 | **Screenshots del pipeline** | [Ver imagen *04-pipeline.jpg*](imgs/04-pipeline.jpg) |
 | 5 | **Manifiestos de Kubernetes** | [Ver directorio *deploy/*](deploy/) |
-| 6 | **Aplicación desplegada** | [Ver imagen *06-kc-visit-counter.jpg*](#) |
-| 7 | **Proyecto en ArgoCD** | [Ver imagen *07-argocd.jpg*](#) |
-| 8 | **Proyecto en SonarCloud** | [Ver imagen *08-sonarcloud.jpg*](#) |
-| 9 | **Proyecto en Snyk** | [Ver imagen *09-snyk.jpg*](#) |
+| 6 | **Aplicación desplegada** | [Ver imagen *06-kc-visit-counter.jpg*](imgs/06-kc-visit-counter.jpg) |
+| 7 | **Proyecto en ArgoCD** | [Ver imagen *07-argocd.jpg*](imgs/07-argocd.jpg) |
+| 8 | **Proyecto en SonarCloud** | [Ver imagen *08-sonarcloud.jpg*](imgs/08-sonarcloud.jpg) |
+| 9 | **Proyecto en Snyk** | [Ver imagen *09-snyk.jpg*](imgs/09-snyk.jpg) |
 | 10 | **Vídeo explicativo** | *[Pendiente de subir a YouTube]* |

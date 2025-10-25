@@ -8,7 +8,7 @@ import psycopg2
 def test_db_select_one():
     dsn = os.environ["DATABASE_URL"]
     last_error = None
-
+    
     for attempt in range(30):
         try:
             with psycopg2.connect(dsn) as conn:
@@ -20,7 +20,5 @@ def test_db_select_one():
             last_error = e
             print(f"Attempt {attempt + 1}/30 failed: {e}")
             time.sleep(1)
-
-    raise AssertionError(
-        f"PostgreSQL is not ready after 30 retries. Last error: {last_error}"
-    )
+    
+    raise AssertionError(f"PostgreSQL is not ready after 30 retries. Last error: {last_error}")

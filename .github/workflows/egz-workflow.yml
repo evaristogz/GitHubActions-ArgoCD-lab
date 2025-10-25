@@ -222,14 +222,32 @@ jobs:
                   args: --file=app/requirements.txt --severity-threshold=medium --sarif-file-output=snyk-deps.sarif --skip-unresolved --update-org
               continue-on-error: false   # Fail pipeline if high/critical vulnerabilities found
               
+            # List files to be scanned by Snyk IaC
+            - name: 📋 List IaC files for scanning
+              run: |
+                echo "Files in deploy/ directory:"
+                find deploy/ -name "*.yaml" -o -name "*.yml" | head -20
+                echo "Total YAML files: $(find deploy/ -name "*.yaml" -o -name "*.yml" | wc -l)"
+              
             # Snyk Infrastructure as Code scan
             - name: 🔎 Snyk - IaC scan (Kubernetes)
               uses: snyk/actions/iac@master
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
               with:
-                  args: --severity-threshold=high deploy/ --sarif-file-output=snyk-iac.sarif
+                  args: --severity-threshold=high --report --format=sarif-output=snyk-iac.sarif deploy/
               continue-on-error: false   # Fail pipeline if IaC security issues found
+              
+            # Verify SARIF file was created
+            - name: 🔍 Verify Snyk IaC SARIF output
+              run: |
+                if [ -f "snyk-iac.sarif" ]; then
+                  echo "✅ SARIF file created successfully"
+                  echo "File size: $(du -h snyk-iac.sarif)"
+                  echo "Number of results: $(jq '.runs[0].results | length' snyk-iac.sarif 2>/dev/null || echo 'Unable to parse')"
+                else
+                  echo "❌ SARIF file not found"
+                fi
               
             # Upload Snyk dependencies results to GitHub Security tab
             - name: Upload Snyk dependencies results

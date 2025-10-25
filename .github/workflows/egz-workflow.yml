@@ -7,6 +7,8 @@ on:
         branches: [develop]
 
 jobs:
+
+#### START TESTS JOB ####
     tests:
         runs-on: ubuntu-latest
         steps:
@@ -192,6 +194,9 @@ jobs:
                 options: >-
                     --health-cmd="pg_isready -U testuser -d testdb"
                     --health-interval=5s --health-timeout=3s --health-retries=20
+#### END TESTS JOB ####
+
+#### START SECURITY JOB ####
     security:
         needs: tests   # Wait for tests to pass
         runs-on: ubuntu-latest
@@ -241,7 +246,9 @@ jobs:
               with:
                   sarif_file: snyk-iac.sarif
                   category: snyk-iac
+#### END SECURITY JOB ####
 
+#### START DOCKER JOB ####
     docker:
         if: github.ref == 'refs/heads/main'   # Only on main branch
         needs: [tests, security]              # Wait for tests and security to pass
@@ -306,3 +313,215 @@ jobs:
               with:
                   sarif_file: snyk-container.sarif
                   category: snyk-container
+#### END DOCKER JOB ####
+
+#### START SUMMARY JOB ####
+    summary:
+        if: always()  # Always run, regardless of other job outcomes
+        needs: [tests, security, docker]
+        runs-on: ubuntu-latest
+        steps:
+            - name: 📊 Pipeline Summary
+              run: |
+                echo "# 🚀 Pipeline Execution Summary" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+                echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+                echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                
+                # Job Status Summary
+                echo "## 📋 Job Results" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "| Job | Status | Description |" >> $GITHUB_STEP_SUMMARY
+                echo "|-----|--------|-------------|" >> $GITHUB_STEP_SUMMARY
+                
+                # Tests job status
+                if [ "${{ needs.tests.result }}" == "success" ]; then
+                  echo "| 🧪 **Tests** | ✅ Success | All tests passed with coverage analysis |" >> $GITHUB_STEP_SUMMARY
+                elif [ "${{ needs.tests.result }}" == "failure" ]; then
+                  echo "| 🧪 **Tests** | ❌ Failed | Tests failed or coverage issues |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| 🧪 **Tests** | ⏭️ Skipped | Tests were skipped |" >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                # Security job status
+                if [ "${{ needs.security.result }}" == "success" ]; then
+                  echo "| 🔒 **Security** | ✅ Success | No security vulnerabilities found |" >> $GITHUB_STEP_SUMMARY
+                elif [ "${{ needs.security.result }}" == "failure" ]; then
+                  echo "| 🔒 **Security** | ❌ Failed | Security vulnerabilities detected |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| 🔒 **Security** | ⏭️ Skipped | Security scan was skipped |" >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                # Docker job status (only runs on main)
+                if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+                  if [ "${{ needs.docker.result }}" == "success" ]; then
+                    echo "| 🐳 **Docker** | ✅ Success | Container built and pushed successfully |" >> $GITHUB_STEP_SUMMARY
+                  elif [ "${{ needs.docker.result }}" == "failure" ]; then
+                    echo "| 🐳 **Docker** | ❌ Failed | Container build or push failed |" >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "| 🐳 **Docker** | ⏭️ Skipped | Docker job was skipped |" >> $GITHUB_STEP_SUMMARY
+                  fi
+                else
+                  echo "| 🐳 **Docker** | ⏭️ Skipped | Only runs on main branch |" >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                echo "" >> $GITHUB_STEP_SUMMARY
+                
+                # Overall Status
+                echo "## 🎯 Overall Pipeline Status" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                
+                # Determine overall status
+                TESTS_OK="${{ needs.tests.result == 'success' }}"
+                SECURITY_OK="${{ needs.security.result == 'success' }}"
+                DOCKER_OK="${{ needs.docker.result == 'success' || needs.docker.result == 'skipped' }}"
+                
+                if [ "$TESTS_OK" == "true" ] && [ "$SECURITY_OK" == "true" ] && [ "$DOCKER_OK" == "true" ]; then
+                  echo "### ✅ **SUCCESS** - All critical jobs completed successfully!" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "🎉 Your code is ready for deployment!" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "### ❌ **FAILURE** - Some jobs failed or encountered issues" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "🔍 Please review the failed jobs above and fix any issues." >> $GITHUB_STEP_SUMMARY
+                  
+                  # Exit with error code if critical jobs failed
+                  if [ "$TESTS_OK" != "true" ] || [ "$SECURITY_OK" != "true" ]; then
+                    echo "💥 Critical jobs failed - marking pipeline as failed" >> $GITHUB_STEP_SUMMARY
+                    exit 1
+                  fi
+                fi
+                
+                # Fetch SonarCloud Quality Gate Status
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "## 📊 Quality Metrics & Security Analysis" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                
+                # SonarCloud API call
+                echo "### 🔍 SonarCloud Analysis" >> $GITHUB_STEP_SUMMARY
+                BRANCH_NAME="${{ github.ref_name }}"
+                SONAR_RESPONSE=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+                  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME" \
+                  2>/dev/null || echo '{"projectStatus":{"status":"UNKNOWN"}}')
+                
+                SONAR_STATUS=$(echo "$SONAR_RESPONSE" | jq -r '.projectStatus.status // "UNKNOWN"' 2>/dev/null || echo "UNKNOWN")
+                
+                if [ "$SONAR_STATUS" == "OK" ]; then
+                  echo "| Metric | Status | Value |" >> $GITHUB_STEP_SUMMARY
+                  echo "|--------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Quality Gate** | ✅ Passed | All conditions met |" >> $GITHUB_STEP_SUMMARY
+                elif [ "$SONAR_STATUS" == "ERROR" ]; then
+                  echo "| Metric | Status | Value |" >> $GITHUB_STEP_SUMMARY
+                  echo "|--------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Quality Gate** | ❌ Failed | Review issues below |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| Metric | Status | Value |" >> $GITHUB_STEP_SUMMARY
+                  echo "|--------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Quality Gate** | ⏳ Processing | Analysis in progress |" >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                # Get detailed SonarCloud metrics
+                MEASURES_RESPONSE=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+                  "https://sonarcloud.io/api/measures/component?component=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME&metricKeys=coverage,bugs,vulnerabilities,code_smells,security_hotspots,ncloc,duplicated_lines_density" \
+                  2>/dev/null || echo '{"component":{"measures":[]}}')
+                
+                # Extract metrics
+                COVERAGE=$(echo "$MEASURES_RESPONSE" | jq -r '.component.measures[] | select(.metric=="coverage") | .value // "N/A"' 2>/dev/null || echo "N/A")
+                BUGS=$(echo "$MEASURES_RESPONSE" | jq -r '.component.measures[] | select(.metric=="bugs") | .value // "0"' 2>/dev/null || echo "0")
+                VULNERABILITIES=$(echo "$MEASURES_RESPONSE" | jq -r '.component.measures[] | select(.metric=="vulnerabilities") | .value // "0"' 2>/dev/null || echo "0")
+                CODE_SMELLS=$(echo "$MEASURES_RESPONSE" | jq -r '.component.measures[] | select(.metric=="code_smells") | .value // "0"' 2>/dev/null || echo "0")
+                SECURITY_HOTSPOTS=$(echo "$MEASURES_RESPONSE" | jq -r '.component.measures[] | select(.metric=="security_hotspots") | .value // "0"' 2>/dev/null || echo "0")
+                LINES_OF_CODE=$(echo "$MEASURES_RESPONSE" | jq -r '.component.measures[] | select(.metric=="ncloc") | .value // "N/A"' 2>/dev/null || echo "N/A")
+                DUPLICATION=$(echo "$MEASURES_RESPONSE" | jq -r '.component.measures[] | select(.metric=="duplicated_lines_density") | .value // "0"' 2>/dev/null || echo "0")
+                
+                # Add detailed metrics to table
+                if [ "$COVERAGE" != "N/A" ]; then
+                  echo "| **Code Coverage** | 📊 | ${COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
+                fi
+                echo "| **Lines of Code** | 📏 | $LINES_OF_CODE |" >> $GITHUB_STEP_SUMMARY
+                echo "| **Bugs** | 🐛 | $BUGS |" >> $GITHUB_STEP_SUMMARY
+                echo "| **Vulnerabilities** | 🔓 | $VULNERABILITIES |" >> $GITHUB_STEP_SUMMARY
+                echo "| **Code Smells** | 👃 | $CODE_SMELLS |" >> $GITHUB_STEP_SUMMARY
+                echo "| **Security Hotspots** | 🔥 | $SECURITY_HOTSPOTS |" >> $GITHUB_STEP_SUMMARY
+                echo "| **Duplication** | 📋 | ${DUPLICATION}% |" >> $GITHUB_STEP_SUMMARY
+                
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**📈 [View Full SonarCloud Report](https://sonarcloud.io/dashboard?id=EvaristoGZ_GitHubActions-ArgoCD-lab&branch=$BRANCH_NAME)**" >> $GITHUB_STEP_SUMMARY
+                
+                # Snyk Security Analysis
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "### 🛡️ Snyk Security Analysis" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                
+                # Check if SARIF files exist and parse them
+                SNYK_DEPS_COUNT=0
+                SNYK_IAC_COUNT=0
+                SNYK_CONTAINER_COUNT=0
+                
+                # Parse Snyk dependency results (if available from artifacts)
+                if [ "${{ needs.security.result }}" == "success" ]; then
+                  echo "| Scan Type | Status | Issues Found |" >> $GITHUB_STEP_SUMMARY
+                  echo "|-----------|--------|--------------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Dependencies** | ✅ Passed | No high/critical vulnerabilities |" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Infrastructure as Code** | ✅ Passed | No high-severity IaC issues |" >> $GITHUB_STEP_SUMMARY
+                  
+                  if [ "${{ github.ref }}" == "refs/heads/main" ] && [ "${{ needs.docker.result }}" == "success" ]; then
+                    echo "| **Container Image** | ✅ Passed | No high-severity container issues |" >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "| **Container Image** | ⏭️ Skipped | Only scanned on main branch |" >> $GITHUB_STEP_SUMMARY
+                  fi
+                elif [ "${{ needs.security.result }}" == "failure" ]; then
+                  echo "| Scan Type | Status | Issues Found |" >> $GITHUB_STEP_SUMMARY
+                  echo "|-----------|--------|--------------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Dependencies** | ❌ Failed | High/critical vulnerabilities detected |" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Infrastructure as Code** | ❌ Failed | High-severity IaC issues found |" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Container Image** | ❓ Unknown | Check individual job results |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| Scan Type | Status | Issues Found |" >> $GITHUB_STEP_SUMMARY
+                  echo "|-----------|--------|--------------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Security Scans** | ⏭️ Skipped | Security job was skipped |" >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "**🔒 [View Security Details in GitHub Security Tab](https://github.com/${{ github.repository }}/security)**" >> $GITHUB_STEP_SUMMARY
+                
+                # Test Results Summary
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "### 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                
+                if [ "${{ needs.tests.result }}" == "success" ]; then
+                  echo "| Test Category | Status | Details |" >> $GITHUB_STEP_SUMMARY
+                  echo "|---------------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Unit Tests** | ✅ Passed | All test cases executed successfully |" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Code Style** | ✅ Passed | Black formatting compliance |" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Linting** | ✅ Passed | Ruff linting checks |" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Coverage Report** | ✅ Generated | Uploaded to SonarCloud |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| Test Category | Status | Details |" >> $GITHUB_STEP_SUMMARY
+                  echo "|---------------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| **Tests** | ❌ Failed | Check job logs for details |" >> $GITHUB_STEP_SUMMARY
+                fi
+                
+                # Container Registry info (only on main)
+                if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### 🐳 Container Registry" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  
+                  if [ "${{ needs.docker.result }}" == "success" ]; then
+                    echo "**✅ Container successfully built and pushed**" >> $GITHUB_STEP_SUMMARY
+                    echo "" >> $GITHUB_STEP_SUMMARY
+                    echo "- **Registry**: GitHub Container Registry (GHCR)" >> $GITHUB_STEP_SUMMARY
+                    echo "- **Image**: \`ghcr.io/${{ github.repository }}/kc-visit-counter:latest\`" >> $GITHUB_STEP_SUMMARY
+                    echo "- **SHA Tag**: \`ghcr.io/${{ github.repository }}/kc-visit-counter:sha-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+                    echo "- **📦 [View All Images](https://github.com/${{ github.repository }}/pkgs/container/kc-visit-counter)**" >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "**❌ Container build failed**" >> $GITHUB_STEP_SUMMARY
+                    echo "" >> $GITHUB_STEP_SUMMARY
+                    echo "Check the Docker job logs for build errors." >> $GITHUB_STEP_SUMMARY
+                  fi
+                fi
+#### END SUMMARY JOB ####

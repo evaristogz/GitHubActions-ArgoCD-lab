@@ -149,6 +149,16 @@ El pipeline está diseñado con **3 jobs secuenciales** que implementan quality 
 - ✅ Trigger de ArgoCD para deployment
 ```
 
+### 4. 📊 Summary Job: Reporte consolidado
+```yaml
+# Ejecuta siempre al final, recopila todos los resultados
+- ✅ Estado de todos los jobs (tests, security, docker)
+- ✅ Métricas en tiempo real de SonarCloud API
+- ✅ Resultados de seguridad de Snyk
+- ✅ Dashboard visual en GitHub Actions
+- ✅ Enlaces directos a reportes y dashboards
+```
+
 ### 🎯 Quality gates implementados
 
 | Gate | Herramienta | Acción si falla | Rama |
@@ -185,9 +195,12 @@ GitHubActions-ArgoCD-lab/
 │   ├── 📄 secrets-db-example.yaml   <- Ejemplo de secrets
 │   └── 📄 app-argocd.yaml           <- Aplicación ArgoCD
 ├── 📁 tests/                        <- Tests de CI/CD
-│   ├── 📄 test_import_app.py        <- Test importación
+│   ├── 📄 test_app_simple.py        <- Tests de cobertura principales
+│   ├── 📄 test_import_app.py        <- Tests de importación
+│   ├── 📄 test_logging.py           <- Tests de configuración logs
 │   ├── 📄 test_smoke.py             <- Tests de integración
-│   └── 📄 test_db_ping.py           <- Test conexión DB
+│   └── 📄 test_db_ping.py           <- Test conexión DB PostgreSQL
+├── 📄 .coveragerc                   <- Configuración coverage.py
 ├── 📄 kind-cluster.yaml             <- Configuración Kind clúster
 └── 📄 sonar-project.properties      <- Configuración SonarCloud
 ```
@@ -307,9 +320,18 @@ ruff check app tests
 
 | Archivo | Propósito | Cobertura |
 |---------|-----------|-----------|
-| `test_import_app.py` | Verificar importación correcta | Sintaxis |
-| `test_smoke.py` | Tests de integración básicos | Funcionalidad |
+| `test_app_simple.py` | Tests principales de cobertura | Core functionality |
+| `test_import_app.py` | Verificar importación correcta | Módulos y setup |
+| `test_logging.py` | Sistema de logging | Configuración logs |
+| `test_smoke.py` | Tests de integración básicos | Funcionalidad general |
 | `test_db_ping.py` | Conectividad con PostgreSQL | Base de datos |
+
+### Archivos de configuración
+
+| Archivo | Propósito | Descripción |
+|---------|-----------|-------------|
+| `.coveragerc` | Configuración de cobertura | Define paths, exclusiones y formato output |
+| `sonar-project.properties` | SonarCloud | Métricas de calidad y configuración |
 
 ### Coverage Report
 
@@ -317,6 +339,9 @@ El pipeline genera reportes de cobertura automáticamente:
 - **Consola**: Durante la ejecución de tests
 - **Archivo XML**: Para integración con SonarCloud
 - **GitHub Actions**: Como artifact descargable
+- **SonarCloud Dashboard**: Visualización web con métricas detalladas
+- **Configuración automática**: Paths corregidos para correcta detección
+
 
 ## 🔒 Seguridad
 
@@ -516,7 +541,7 @@ livenessProbe:
   periodSeconds: 10
 ```
 
-### Métricas Disponibles
+### Métricas disponibles
 
 - **🔍 GitHub Actions**: Métricas de pipeline y deployment
 - **📊 SonarCloud**: Métricas de calidad y coverage
@@ -556,5 +581,5 @@ kind delete cluster --name local-k8s-cluster
 | 6 | **Aplicación desplegada** | [Ver imagen *06-kc-visit-counter.jpg*](#) |
 | 7 | **Proyecto en ArgoCD** | [Ver imagen *07-argocd.jpg*](#) |
 | 8 | **Proyecto en SonarCloud** | [Ver imagen *08-sonarcloud.jpg*](#) |
-| 9 | **Proyecto en Snyk** | [Ver imagen *04-pipeline.jpg*](#) |
+| 9 | **Proyecto en Snyk** | [Ver imagen *09-snyk.jpg*](#) |
 | 10 | **Vídeo explicativo** | *[Pendiente de subir a YouTube]* |

@@ -581,5 +581,5 @@ kind delete cluster --name local-k8s-cluster
 | 6 | **Aplicación desplegada** | [Ver imagen *06-kc-visit-counter.jpg*](#) |
 | 7 | **Proyecto en ArgoCD** | [Ver imagen *07-argocd.jpg*](#) |
 | 8 | **Proyecto en SonarCloud** | [Ver imagen *08-sonarcloud.jpg*](#) |
-| 9 | **Proyecto en Snyk** | [Ver imagen *09-pipeline.jpg*](#) |
+| 9 | **Proyecto en Snyk** | [Ver imagen *09-snyk.jpg*](#) |
 | 10 | **Vídeo explicativo** | *[Pendiente de subir a YouTube]* |

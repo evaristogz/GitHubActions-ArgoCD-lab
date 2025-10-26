@@ -152,19 +152,20 @@ GitHubActions-ArgoCD-lab/
 │   └── 📁 static                    <- Directorio estáticos app
 │       └── 📄 style.css             <- Hoja de estilo aplicada al HTML
 ├── 📁 deploy/                       <- Manifiestos Kubernetes
-│   ├── 📄 namespace.yaml            <- Namespace kc
+│   ├── 📄 app-argocd.yaml           <- Aplicación ArgoCD
 │   ├── 📄 deployment.yaml           <- Deployment de la app
-│   ├── 📄 service.yaml              <- Service ClusterIP
-│   ├── 📄 postgres.yaml             <- StatefulSet PostgreSQL
+│   ├── 📄 namespace.yaml            <- Namespace kc
 │   ├── 📄 postgres-init.yaml        <- Schema de la base de datos
+│   ├── 📄 postgres.yaml             <- StatefulSet PostgreSQL
 │   ├── 📄 secrets-db-example.yaml   <- Ejemplo de secrets
-│   └── 📄 app-argocd.yaml           <- Aplicación ArgoCD
+│   └── 📄 service.yaml              <- Service ClusterIP
+├── 📁 imgs                          <- Imágenes para README.md
 ├── 📁 tests/                        <- Tests de CI/CD
 │   ├── 📄 test_app_simple.py        <- Tests de cobertura principales
+│   ├── 📄 test_db_ping.py           <- Test conexión DB PostgreSQL
 │   ├── 📄 test_import_app.py        <- Tests de importación
 │   ├── 📄 test_logging.py           <- Tests de configuración logs
-│   ├── 📄 test_smoke.py             <- Tests de integración
-│   └── 📄 test_db_ping.py           <- Test conexión DB PostgreSQL
+│   └── 📄 test_smoke.py             <- Tests de integración
 ├── 📄 .coveragerc                   <- Configuración coverage.py
 ├── 📄 kind-cluster.yaml             <- Configuración Kind clúster
 └── 📄 sonar-project.properties      <- Configuración SonarCloud

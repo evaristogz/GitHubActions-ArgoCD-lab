@@ -235,7 +235,7 @@ jobs:
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
               with:
-                  args: --severity-threshold=high --report --format=sarif-output=snyk-iac.sarif deploy/
+                  args: --severity-threshold=high --sarif-file-output=snyk-iac.sarif deploy/
               continue-on-error: false   # Fail pipeline if IaC security issues found
               
             # Verify SARIF file was created

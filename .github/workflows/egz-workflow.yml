@@ -13,12 +13,12 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             # Download the repository
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
               with:
                   fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
             
             # Configure Python
-            - uses: actions/setup-python@v5
+            - uses: actions/setup-python@v6
               with:
                   python-version: "3.12"
             
@@ -86,7 +86,7 @@ jobs:
 
             # Upload coverage report
             - name: Upload coverage report
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: coverage-xml
                   path: coverage.xml
@@ -204,7 +204,7 @@ jobs:
             contents: read
             security-events: write
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
             
             # Debug: Show what Snyk will analyze
             - name: Debug - Show requirements.txt
@@ -251,7 +251,7 @@ jobs:
               
             # Upload Snyk dependencies results to GitHub Security tab
             - name: Upload Snyk dependencies results
-              uses: github/codeql-action/upload-sarif@v3
+              uses: github/codeql-action/upload-sarif@v4
               if: always() && hashFiles('snyk-deps.sarif') != ''
               with:
                   sarif_file: snyk-deps.sarif
@@ -259,7 +259,7 @@ jobs:
                   
             # Upload Snyk IaC results to GitHub Security tab  
             - name: Upload Snyk IaC results
-              uses: github/codeql-action/upload-sarif@v3
+              uses: github/codeql-action/upload-sarif@v4
               if: always() && hashFiles('snyk-iac.sarif') != ''
               with:
                   sarif_file: snyk-iac.sarif
@@ -326,7 +326,7 @@ jobs:
               
             # Upload Snyk container results to GitHub Security tab
             - name: Upload Snyk container results
-              uses: github/codeql-action/upload-sarif@v3
+              uses: github/codeql-action/upload-sarif@v4
               if: always() && hashFiles('snyk-container.sarif') != ''
               with:
                   sarif_file: snyk-container.sarif

@@ -610,3 +610,13 @@ kind delete cluster --name local-k8s-cluster
 | 8 | **Proyecto en SonarCloud** | [Ver imagen *08-sonarcloud.jpg*](imgs/08-sonarcloud.jpg) |
 | 9 | **Proyecto en Snyk** | [Ver imagen *09-snyk.jpg*](imgs/09-snyk.jpg) |
 | 10 | **Vídeo explicativo** | [Ver en YouTube](https://youtu.be/GP0GXxqB1V4) |
+
+---
+
+## ⚠️ Disclaimer
+
+> **Importante:** En entornos productivos, el **código fuente de la aplicación debería residir en un repositorio independiente**. Esto permite versionar la aplicación de manera individual respecto al resto del código de infraestructura, facilitando la trazabilidad, el mantenimiento y la seguridad, así como siguiendo buenas prácticas de GitFlow y GitOps.
+
+> Además, **no es recomendable utilizar la etiqueta `latest`** para las imágenes de contenedor en producción. Es preferible emplear etiquetas versionadas y únicas para cada release, lo que garantiza despliegues reproducibles y controlados.
+
+> En este caso, ambas prácticas se realizaron de esta manera por motivos de tiempos y simplificación del escenario.

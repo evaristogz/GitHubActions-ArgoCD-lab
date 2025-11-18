@@ -187,10 +187,36 @@ Ejecutado en Windows 11 con Docker Desktop 4.48.0, Docker Engine v28.5.1, Kind v
 
 Para beneficiarse de las ventajas de los servicios de terceros, se recomienda que el repositorio GitHub sea público.
 
-### 1. Clonar el repositorio
+### 🔄 Para usar este proyecto (fork)
+
+Si quieres recrear este laboratorio en tu propia cuenta, necesitarás hacer los siguientes cambios:
+
+#### Cambios obligatorios en los archivos
+
+| Archivo | Línea(s) | Cambiar | Por |
+|---------|----------|---------|-----|
+| `deploy/app-argocd.yaml` | 8 | `repoURL: https://github.com/evaristogz/...` | Tu URL de repositorio |
+| `deploy/deployment.yaml` | 19 | `image: ghcr.io/evaristogz/...` | Tu imagen en GHCR |
+| `sonar-project.properties` | 2-3 | `sonar.projectKey` y `sonar.organization` | Tus valores de SonarCloud |
+
+#### Secrets de GitHub a configurar
+
+En tu repositorio: `Settings > Secrets and Variables > Actions > Repository secrets`
+
+| Secret | Descripción |
+|--------|-------------|
+| `SNYK_TOKEN` | Token de [Snyk](https://app.snyk.io/account) |
+| `SONAR_TOKEN` | Token de [SonarCloud](https://sonarcloud.io/account/security) |
+
+
+### 🚀 Cómo desplegar GitHubActions-ArgoCD-lab
+
+### 1. Fork y clonar el repositorio
 
 ```bash
-git clone https://github.com/EvaristoGZ/GitHubActions-ArgoCD-lab.git ; cd GitHubActions-ArgoCD-lab
+# Usa la dirección URL de tu fork
+git clone https://github.com/TU-USUARIO/TU-REPO.git
+cd TU-REPO
 ```
 
 ### 2. Crear cluster de Kind
@@ -199,45 +225,78 @@ git clone https://github.com/EvaristoGZ/GitHubActions-ArgoCD-lab.git ; cd GitHub
 kind create cluster --config kind-cluster.yaml
 ```
 
-### 3. Conectar aplicaciones
+### 3. Crear secrets de base de datos
 
-#### 3.1 Conectar Snyk
-Visita [Snyk.io](https://snyk.io/), conéctate con tu cuenta de GitHub y extrae un [token personal](https://app.snyk.io/account).
+```bash
+kubectl apply -f deploy/secrets-db-example.yaml
+```
 
-Añade este token como secreto en la configuración de tu repositorio (Settings>Secrets and Variables>Actions>Repository secrets) con el nombre *SNYK_TOKEN*.
+También puedes copiar el archivo *deploy/secrets-db-example.yaml* y crear tu propio archivo con tus propias credenciales. Para estas pruebas en un entorno local, puedes usar el archivo de ejemplo.
 
-#### 3.2 Conectar SonarCloud
-Visita [Sonarcloud.io](https://sonarcloud.io/), conéctate con tu cuenta de GitHub, crea un proyecto y extrae un [token personal](https://sonarcloud.io/account/security).
+> [!IMPORTANT]
+> **No subas `secrets-db.yaml` al repositorio**. Está en `.gitignore` para proteger las credenciales.
 
-Añade este token como secreto en la configuración de tu repositorio (Settings>Secrets and Variables>Actions>Repository secrets) con el nombre *SONAR_TOKEN*.
+### 4. Configurar servicios externos
 
-### 4. Instalar y desplegar ArgoCD 
+#### 4.1 Conectar Snyk
+1. Visita [Snyk.io](https://snyk.io/) y conéctate con tu cuenta de GitHub
+2. Extrae un [token personal](https://app.snyk.io/account)
+3. Añádelo como secreto `SNYK_TOKEN` en tu repositorio de GitHub
 
-#### 4.1 Crear namespace argocd
-```kubectl create namespace argocd```
+#### 4.2 Conectar SonarCloud
+1. Visita [Sonarcloud.io](https://sonarcloud.io/) y conéctate con tu cuenta de GitHub
+2. Crea un nuevo proyecto
+3. Extrae un [token personal](https://sonarcloud.io/account/security)
+4. Añádelo como secreto `SONAR_TOKEN` en tu repositorio de GitHub
+5. Actualiza `sonar-project.properties` con tu `projectKey` y `organization`
 
-#### 4.2 Instalar ArgoCD
-```kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml```
+### 5. Instalar y desplegar ArgoCD 
 
-#### 4.3 Crear Port-forward en otra terminal
-```kubectl port-forward svc/argocd-server -n argocd 9090:443```
+#### 5.1 Crear namespace argocd
+```bash
+kubectl create namespace argocd
+```
 
-#### 4.4 Acceder a la interfaz web de ArgoCD
+#### 5.2 Instalar ArgoCD
+```bash
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
+
+#### 5.3 Esperar a que ArgoCD esté listo
+```bash
+kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+```
+
+#### 5.4 Crear Port-forward en otra terminal
+```bash
+kubectl port-forward svc/argocd-server -n argocd 9090:443
+```
+
+#### 5.5 Acceder a la interfaz web de ArgoCD
 Acceder a https://localhost:9090 desde un navegador web y aceptar la conexión al sitio no seguro.
 
-#### 4.5 Obtener la contraseña inicial del usuario admin
-```kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo```
+#### 5.6 Obtener la contraseña inicial del usuario admin
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+```
 
-#### 4.6 Desplegar aplicación desde app-argocd.yaml
-```kubectl apply -f deploy/app-argocd.yaml```
+#### 5.7 Desplegar aplicación desde app-argocd.yaml
+```bash
+kubectl apply -f deploy/app-argocd.yaml
+```
 
-### 5. Acceder a kc-visit-counter
+### 6. Acceder a kc-visit-counter
+
+Crear port-forward para acceder a la aplicación:
+
+```bash
+kubectl port-forward svc/kc-visit-counter -n kc 8080:80
+```
+
 Acceder a http://localhost:8080 desde un navegador web.
 
-Nota: las visitas se incrementarán automáticamente cada 90 segundos debido a que la comprobación del deployment se hace a esa dirección URL.
-
 > [!NOTE]
-> Si quieres recrear este laboratorio, deberás hacer un fork del repositorio y hacer cambios en las referencias de los ficheros contenidos en la carpeta deploy.
+> Las visitas se incrementarán automáticamente cada 90 segundos debido a que el readiness probe de Kubernetes hace comprobaciones periódicas a esa dirección URL.
 
 ## ⚙️ Configuración
 
@@ -251,7 +310,7 @@ GITHUB_TOKEN        # Token GitHub (automático, no hace falta definirlo)
 ```
 
 #### Aplicación
-Personalizables en *secrets-db-example.yaml*
+Personalizables en *secrets-db-example.yaml* o un nuevo fichero secrets.
 ```yaml
 DB_NAME             # Nombre de la base de datos
 DB_USER             # Usuario PostgreSQL

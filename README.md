@@ -12,6 +12,8 @@ El resultado final contempla un laboratorio con una arquitectura ficticia y simp
 
 [![⭐ Conecta conmigo en LinkedIn](https://img.shields.io/badge/⭐_Conecta_conmigo_en-LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white&labelColor=000000)](https://www.linkedin.com/in/evaristogz/)
 
+[![Ver este laboratorio en YouTube](https://img.shields.io/badge/_Ver_laboratorio_en-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white&labelColor=000000)](https://youtu.be/GP0GXxqB1V4)
+
 ---
 
 [🔽 Ir directamente a 🚀 Cómo desplegar GitHubActions-ArgoCD-lab 🔽](#-c%C3%B3mo-desplegar-githubactions-argocd-lab)
